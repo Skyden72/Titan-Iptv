@@ -1,0 +1,5 @@
+{
+  "name": "Titon IPTV Player",
+  "description": "A modern, sleek IPTV player for Windows, supporting Xstream Codes and M3U playlists. Enjoy Live TV, Movies, and Series in up to 4K resolution with a beautiful, user-friendly interface.",
+  "requestFramePermissions": []
+}
