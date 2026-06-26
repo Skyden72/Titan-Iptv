@@ -1,4 +1,4 @@
-import { cpSync, existsSync, rmSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 const sourceRoot = join('dist-electron', 'electron');
@@ -10,3 +10,4 @@ if (!existsSync(sourceRoot)) {
 
 cpSync(sourceRoot, targetRoot, { recursive: true, force: true });
 rmSync(sourceRoot, { recursive: true, force: true });
+copyFileSync(join('electron', 'preload.cjs'), join(targetRoot, 'preload.cjs'));

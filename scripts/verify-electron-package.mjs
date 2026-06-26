@@ -1,22 +1,18 @@
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { extractFile, listPackage } from '@electron/asar';
 
 const asarPath = join('release', 'win-unpacked', 'resources', 'app.asar');
-const asarCli = join('node_modules', '@electron', 'asar', 'bin', 'asar.js');
 
 if (!existsSync(asarPath)) {
   throw new Error(`Missing packaged app archive: ${asarPath}`);
 }
 
-if (!existsSync(asarCli)) {
-  throw new Error(`Missing asar CLI: ${asarCli}`);
-}
-
-const list = execFileSync(process.execPath, [asarCli, 'list', asarPath], { encoding: 'utf8' });
+const list = listPackage(asarPath).join('\n');
+const indexHtml = extractFile(asarPath, 'dist/index.html').toString('utf8');
 const requiredEntries = [
   '\\dist-electron\\main.js',
-  '\\dist-electron\\preload.js',
+  '\\dist-electron\\preload.cjs',
   '\\dist-electron\\ipc\\registerHandlers.js',
   '\\dist-electron\\storage\\database.js',
   '\\dist\\index.html',
@@ -28,13 +24,17 @@ for (const entry of requiredEntries) {
   }
 }
 
+if (indexHtml.includes('src="/assets/') || indexHtml.includes('href="/assets/')) {
+  throw new Error('Packaged renderer uses root-relative asset paths; Electron file loading needs ./assets paths');
+}
+
 if (list.includes('\\dist-electron\\electron\\')) {
   throw new Error('Packaged app archive contains unflattened dist-electron\\electron output');
 }
 
 const runtimeFiles = [
   join('dist-electron', 'main.js'),
-  join('dist-electron', 'preload.js'),
+  join('dist-electron', 'preload.cjs'),
   join('dist-electron', 'ipc', 'registerHandlers.js'),
 ];
 
