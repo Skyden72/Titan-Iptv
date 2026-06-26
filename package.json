@@ -14,9 +14,10 @@
     "test": "cross-env NODE_OPTIONS=--no-warnings vitest run",
     "test:watch": "cross-env NODE_OPTIONS=--no-warnings vitest",
     "build": "npm run typecheck && npm run test && npm run build:renderer && npm run build:electron",
-    "build:win": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --config builder.json",
+    "build:win": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --config builder.json && npm run verify:package",
     "pack": "npm run pack:portable",
-    "pack:portable": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win portable --config builder.json"
+    "pack:portable": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win portable --config builder.json && npm run verify:package",
+    "verify:package": "node scripts/verify-electron-package.mjs"
   },
   "dependencies": {
     "@electron/remote": "^2.1.2",

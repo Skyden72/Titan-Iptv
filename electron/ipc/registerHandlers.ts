@@ -1,8 +1,24 @@
 import crypto from 'node:crypto';
 import type { IpcMain } from 'electron';
-import { ipcChannels, type PlayerCommand } from '../../shared/ipc.js';
+import type { PlayerCommand } from '../../shared/ipc.js';
 import type { AppSettings, Favourite, PlaybackRequest, RefreshProgress, XtreamCredentials } from '../../types/app.js';
 import type { XtreamClient } from '../xtream/client.js';
+
+const ipcChannels = {
+  appReady: 'app:ready',
+  profilesConnect: 'profiles:connect',
+  profilesDisconnect: 'profiles:disconnect',
+  catalogGet: 'catalog:get',
+  catalogRefresh: 'catalog:refresh',
+  seriesEpisodes: 'series:episodes',
+  favouritesToggle: 'favourites:toggle',
+  progressSave: 'progress:save',
+  playerStart: 'player:start',
+  playerCommand: 'player:command',
+  settingsGet: 'settings:get',
+  settingsSave: 'settings:save',
+  diagnosticsGet: 'diagnostics:get',
+} as const;
 
 type RegisterInput = {
   ipcMain: Pick<IpcMain, 'handle'>;
