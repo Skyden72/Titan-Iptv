@@ -1,10 +1,21 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: { host: true, port: 5173 },
-  build: { sourcemap: true },
-  define: { 'process.env.NODE_ENV': JSON.stringify('development') }
+  server: {
+    host: '127.0.0.1',
+    port: 5173,
+    strictPort: true
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    emptyOutDir: true
+  },
+  test: {
+    environment: 'node',
+    globals: true,
+    setupFiles: './tests/setup.ts'
+  }
 });

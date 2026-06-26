@@ -6,7 +6,7 @@ export const __DEV__ = (() => {
   try {
     // Vite or modern bundlers
     // @ts-ignore
-    if (typeof import !== 'undefined' && (import.meta as any)?.env?.DEV) return true;
+    if ((import.meta as any)?.env?.DEV) return true;
   } catch {}
   try {
     // Fallback to NODE_ENV (vite.config defines it in dev)

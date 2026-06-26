@@ -1,54 +1,16 @@
-<!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-900">
+<!doctype html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zenith IPTV Player</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'brand-blue': '#0891b2',
-              'brand-cyan': '#06b6d4',
-            },
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-          },
-        },
-      }
-    </script>
-    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "electron": "https://aistudiocdn.com/electron@^38.4.0",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^6.24.1",
-    "zustand": "https://aistudiocdn.com/zustand@^5.0.8",
-    "zustand/": "https://aistudiocdn.com/zustand@^5.0.8/",
-    "path": "https://aistudiocdn.com/path@^0.12.7",
-    "electron-squirrel-startup": "https://aistudiocdn.com/electron-squirrel-startup@^1.0.1",
-    "process": "https://aistudiocdn.com/process@^0.11.10",
-    "os": "https://aistudiocdn.com/os@^0.1.2",
-    "vite": "https://aistudiocdn.com/vite@^7.1.12",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.0",
-    "url": "https://aistudiocdn.com/url@^0.11.4",
-    "undici": "https://aistudiocdn.com/undici@^7.16.0",
-    "http-proxy-middleware": "https://aistudiocdn.com/http-proxy-middleware@^3.0.5",
-    "buffer": "https://aistudiocdn.com/buffer@^6.0.3",
-    "m3u-parser-generator": "https://aistudiocdn.com/m3u-parser-generator@^5.0.2"
-  }
-}
-</script>
-</head>
-  <body class="h-full">
-    <div id="root" class="h-full"></div>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; connect-src 'self' http: https:;"
+    />
+    <title>Titon IPTV Player</title>
+  </head>
+  <body>
+    <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

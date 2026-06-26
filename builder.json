@@ -1,7 +1,7 @@
 
 {
   "appId": "com.zenith.iptvplayer",
-  "productName": "Zenith IPTV Player",
+  "productName": "Titon IPTV Player",
   "copyright": "Copyright © 2024 Your Company",
   "directories": {
     "output": "dist",
