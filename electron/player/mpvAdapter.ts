@@ -30,11 +30,16 @@ export class MpvAdapter implements PlayerEngine {
   private process: ChildProcessWithoutNullStreams | null = null;
   private ipcSocket: IpcSocket | null = null;
   private ipcPath: string | null = null;
+  private surfaceWindowId: string | null = null;
   private state: PlayerState = idleState;
   private listeners = new Set<(state: PlayerState) => void>();
   private requestId = 1;
 
   constructor(private readonly mpvPath: string | undefined, private readonly deps: Deps = {}) {}
+
+  setSurfaceWindowId(windowId: string | null): void {
+    this.surfaceWindowId = windowId;
+  }
 
   async start(request: PlaybackRequest): Promise<PlayerState> {
     if (!this.mpvPath) {
@@ -91,9 +96,10 @@ export class MpvAdapter implements PlayerEngine {
   private spawnMpv() {
     const spawnProcess = this.deps.spawnProcess ?? spawn;
     this.ipcPath = this.deps.ipcPathFactory?.() ?? `\\\\.\\pipe\\titon-mpv-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const surfaceArgs = this.surfaceWindowId ? [`--wid=${this.surfaceWindowId}`] : ['--force-window=yes'];
     this.process = spawnProcess(this.mpvPath!, [
       '--idle=yes',
-      '--force-window=yes',
+      ...surfaceArgs,
       `--input-ipc-server=${this.ipcPath}`,
       '--input-terminal=no',
       '--term-playing-msg=',

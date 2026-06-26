@@ -106,6 +106,14 @@ export interface PlaybackRequest {
   playlistItemIds?: string[];
 }
 
+export interface PlayerSurfaceBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  visible: boolean;
+}
+
 export interface TrackInfo {
   id: number;
   type: 'audio' | 'sub';

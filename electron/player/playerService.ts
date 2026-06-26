@@ -1,13 +1,22 @@
 import type { PlayerCommand } from '../../shared/ipc.js';
-import type { PlaybackRequest, PlayerState } from '../../types/app.js';
+import type { PlaybackRequest, PlayerState, PlayerSurfaceBounds } from '../../types/app.js';
 import type { PlayerEngine } from './playerTypes.js';
 
 export class PlayerService {
   private playlist: string[] = [];
   private activeRequest: PlaybackRequest | null = null;
 
-  constructor(private readonly engine: PlayerEngine, private readonly emit: (state: PlayerState) => void) {
+  constructor(
+    private readonly engine: PlayerEngine,
+    private readonly emit: (state: PlayerState) => void,
+    private readonly configureSurface?: (bounds: PlayerSurfaceBounds) => Promise<string | null>
+  ) {
     this.engine.onState((state) => this.emit(state));
+  }
+
+  async setSurface(bounds: PlayerSurfaceBounds): Promise<void> {
+    const windowId = await this.configureSurface?.(bounds);
+    if (windowId !== undefined) this.engine.setSurfaceWindowId(windowId);
   }
 
   async start(request: PlaybackRequest): Promise<PlayerState> {

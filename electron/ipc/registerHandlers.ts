@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import type { IpcMain } from 'electron';
 import type { PlayerCommand } from '../../shared/ipc.js';
-import type { AppSettings, Favourite, PlaybackRequest, RefreshProgress, XtreamCredentials } from '../../types/app.js';
+import type { AppSettings, Favourite, PlaybackRequest, PlayerSurfaceBounds, RefreshProgress, XtreamCredentials } from '../../types/app.js';
 import type { XtreamClient } from '../xtream/client.js';
 
 const ipcChannels = {
@@ -15,6 +15,7 @@ const ipcChannels = {
   progressSave: 'progress:save',
   playerStart: 'player:start',
   playerCommand: 'player:command',
+  playerSurfaceSet: 'player:surface:set',
   settingsGet: 'settings:get',
   settingsSave: 'settings:save',
   diagnosticsGet: 'diagnostics:get',
@@ -28,6 +29,7 @@ type RegisterInput = {
   playerService: {
     start(input: PlaybackRequest): Promise<any>;
     command(command: PlayerCommand): Promise<any>;
+    setSurface(bounds: PlayerSurfaceBounds): Promise<void>;
     state(): any;
   };
   diagnostics: () => Promise<any> | any;
@@ -80,6 +82,7 @@ export function registerHandlers(input: RegisterInput) {
   ipcMain.handle(ipcChannels.progressSave, async (_event, progress) => repositories.progress.save(progress));
   ipcMain.handle(ipcChannels.playerStart, async (_event, request: PlaybackRequest) => playerService.start(request));
   ipcMain.handle(ipcChannels.playerCommand, async (_event, command: PlayerCommand) => playerService.command(command));
+  ipcMain.handle(ipcChannels.playerSurfaceSet, async (_event, bounds: PlayerSurfaceBounds) => playerService.setSurface(bounds));
   ipcMain.handle(ipcChannels.settingsGet, async () => repositories.catalog.snapshot().settings);
   ipcMain.handle(ipcChannels.settingsSave, async (_event, settings: AppSettings) => repositories.settings.save(settings));
   ipcMain.handle(ipcChannels.diagnosticsGet, async () => input.diagnostics());

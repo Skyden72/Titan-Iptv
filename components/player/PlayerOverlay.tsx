@@ -14,7 +14,7 @@ const PlayerOverlay: React.FC = () => {
   const canSeek = Boolean(state.durationSeconds);
 
   return (
-    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-4 text-white">
+    <div className="bg-slate-950/95 border-t border-slate-800 p-4 text-white">
       <div className="flex items-end justify-between gap-4">
         <div className="min-w-0">
           <div className="text-lg font-semibold truncate">{state.title}</div>

@@ -17,13 +17,14 @@ describe('registerHandlers', () => {
         settings: { save: vi.fn((settings) => settings) },
       } as any,
       createXtreamClient: vi.fn(),
-      playerService: { start: vi.fn(), command: vi.fn(), state: vi.fn() } as any,
+      playerService: { start: vi.fn(), command: vi.fn(), setSurface: vi.fn(), state: vi.fn() } as any,
       diagnostics: vi.fn(),
     });
 
     expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.appReady, expect.any(Function));
     expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.profilesConnect, expect.any(Function));
     expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.playerStart, expect.any(Function));
+    expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.playerSurfaceSet, expect.any(Function));
     expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.diagnosticsGet, expect.any(Function));
   });
 });

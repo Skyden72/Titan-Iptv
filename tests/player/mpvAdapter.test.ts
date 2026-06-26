@@ -21,6 +21,7 @@ describe('MpvAdapter', () => {
         destroy: vi.fn(),
       } as any)),
     });
+    adapter.setSurfaceWindowId('12345');
 
     await adapter.start({ kind: 'movie', itemId: 'movie:1', title: 'Movie', streamUrl: 'http://example.test/movie.ts' });
     await adapter.command({ type: 'setVolume', volume: 70 });
@@ -28,6 +29,7 @@ describe('MpvAdapter', () => {
 
     expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.arrayContaining([
       '--input-ipc-server=\\\\.\\pipe\\titon-test-mpv',
+      '--wid=12345',
       '--hwdec=no',
       '--vo=gpu',
       '--gpu-api=d3d11',

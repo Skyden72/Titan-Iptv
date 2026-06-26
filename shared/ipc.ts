@@ -5,6 +5,7 @@ import type {
   Episode,
   Favourite,
   PlayerState,
+  PlayerSurfaceBounds,
   PlaybackRequest,
   Profile,
   RefreshProgress,
@@ -22,6 +23,7 @@ export const ipcChannels = {
   progressSave: 'progress:save',
   playerStart: 'player:start',
   playerCommand: 'player:command',
+  playerSurfaceSet: 'player:surface:set',
   playerState: 'player:state',
   settingsGet: 'settings:get',
   settingsSave: 'settings:save',
@@ -50,6 +52,7 @@ export interface TitonBridge {
   toggleFavourite(input: Favourite): Promise<Favourite[]>;
   startPlayback(input: PlaybackRequest): Promise<PlayerState>;
   sendPlayerCommand(command: PlayerCommand): Promise<PlayerState>;
+  setPlayerSurface(bounds: PlayerSurfaceBounds): Promise<void>;
   getSettings(): Promise<AppSettings>;
   saveSettings(settings: AppSettings): Promise<AppSettings>;
   getDiagnostics(): Promise<DiagnosticSnapshot>;
@@ -67,6 +70,7 @@ export type InvokeMap = {
   [ipcChannels.favouritesToggle]: { request: Favourite; response: Favourite[] };
   [ipcChannels.playerStart]: { request: PlaybackRequest; response: PlayerState };
   [ipcChannels.playerCommand]: { request: PlayerCommand; response: PlayerState };
+  [ipcChannels.playerSurfaceSet]: { request: PlayerSurfaceBounds; response: void };
   [ipcChannels.settingsGet]: { request: void; response: AppSettings };
   [ipcChannels.settingsSave]: { request: AppSettings; response: AppSettings };
   [ipcChannels.diagnosticsGet]: { request: void; response: DiagnosticSnapshot };
