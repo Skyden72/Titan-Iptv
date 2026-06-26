@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { ipcChannels, type PlayerCommand, type TitonBridge } from '../shared/ipc.js';
+import type { PlayerCommand, TitonBridge } from '../shared/ipc.js';
 import type {
   AppSettings,
   Favourite,
@@ -8,6 +8,22 @@ import type {
   PlayerState,
   XtreamCredentials,
 } from '../types/app.js';
+
+const ipcChannels = {
+  appReady: 'app:ready',
+  profilesConnect: 'profiles:connect',
+  profilesDisconnect: 'profiles:disconnect',
+  catalogGet: 'catalog:get',
+  catalogRefresh: 'catalog:refresh',
+  seriesEpisodes: 'series:episodes',
+  favouritesToggle: 'favourites:toggle',
+  playerStart: 'player:start',
+  playerCommand: 'player:command',
+  playerState: 'player:state',
+  settingsGet: 'settings:get',
+  settingsSave: 'settings:save',
+  diagnosticsGet: 'diagnostics:get',
+} as const;
 
 const bridge: TitonBridge = {
   appReady: () => ipcRenderer.invoke(ipcChannels.appReady),
