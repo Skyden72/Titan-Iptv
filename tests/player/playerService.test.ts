@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PlayerService } from '../../electron/player/playerService';
+import type { PlayerState } from '../../types/app';
 
 describe('PlayerService', () => {
   it('starts playback and relays state changes', async () => {
-    const state = { status: 'playing', positionSeconds: 0, volume: 100, muted: false, fullscreen: false, audioTracks: [], subtitleTracks: [] };
+    const state: PlayerState = { status: 'playing', positionSeconds: 0, volume: 100, muted: false, fullscreen: false, audioTracks: [], subtitleTracks: [] };
     const callbacks = new Set<(value: any) => void>();
     const emit = vi.fn();
     const service = new PlayerService({

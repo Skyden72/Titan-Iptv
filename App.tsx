@@ -1,41 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import router from './router';
 import { useAppStore } from './store/useAppStore';
+import { usePlayerStore } from './store/playerStore';
 import Loader from './components/Loader';
 
-// A full-page loader to be shown while the app state is rehydrating.
-const GlobalLoader: React.FC = () => (
-  <div className="w-full h-full flex items-center justify-center bg-gray-900">
-    <Loader />
-  </div>
-);
-
 function App() {
-  // Always start with `false` to guarantee a re-render after hydration is confirmed.
-  // This prevents race conditions where components might read stale state on initial render.
-  const [isHydrated, setIsHydrated] = useState(false);
+  const boot = useAppStore((state) => state.boot);
+  const booted = useAppStore((state) => state.booted);
+  const attachPlayer = usePlayerStore((state) => state.attach);
 
   useEffect(() => {
-    // The `onFinishHydration` listener is the most reliable way to know when the state is ready.
-    const unsub = useAppStore.persist.onFinishHydration(() => {
-      setIsHydrated(true);
-    });
+    boot();
+    return attachPlayer();
+  }, [boot, attachPlayer]);
 
-    // We also check `hasHydrated` directly in case the event fired before this component mounted.
-    if (useAppStore.persist.hasHydrated()) {
-      setIsHydrated(true);
-    }
-
-    // Cleanup the subscription on unmount.
-    return () => {
-      unsub();
-    };
-  }, []);
+  if (!booted) {
+    return <div className="h-full bg-slate-950 text-slate-100 flex items-center justify-center"><Loader /></div>;
+  }
 
   return (
-    <div className="h-full bg-gray-900 text-gray-200 antialiased">
-      {isHydrated ? <RouterProvider router={router} /> : <GlobalLoader />}
+    <div className="h-full bg-slate-950 text-slate-100 antialiased">
+      <RouterProvider router={router} />
     </div>
   );
 }
