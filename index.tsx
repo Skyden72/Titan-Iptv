@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './styles.css';
 
 // A global error boundary to get unminified stack traces in development.
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err?: Error }> {
