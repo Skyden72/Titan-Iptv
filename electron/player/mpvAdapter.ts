@@ -1,10 +1,15 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { createConnection, type Socket } from 'node:net';
 import type { PlayerCommand } from '../../shared/ipc.js';
 import type { PlaybackRequest, PlayerState, TrackInfo } from '../../types/app.js';
 import type { PlayerEngine } from './playerTypes.js';
 
+type IpcSocket = Pick<Socket, 'write' | 'on' | 'end' | 'destroy'>;
+
 type Deps = {
   spawnProcess?: typeof spawn;
+  createIpcConnection?: (path: string) => Promise<IpcSocket>;
+  ipcPathFactory?: () => string;
 };
 
 const idleState: PlayerState = {
@@ -23,6 +28,8 @@ function redactCredentialedText(text: string): string {
 
 export class MpvAdapter implements PlayerEngine {
   private process: ChildProcessWithoutNullStreams | null = null;
+  private ipcSocket: IpcSocket | null = null;
+  private ipcPath: string | null = null;
   private state: PlayerState = idleState;
   private listeners = new Set<(state: PlayerState) => void>();
   private requestId = 1;
@@ -35,6 +42,7 @@ export class MpvAdapter implements PlayerEngine {
     }
     if (!this.process) this.spawnMpv();
     this.update({ ...this.state, status: 'connecting', title: request.title, itemId: request.itemId, error: undefined });
+    await this.ensureIpc();
     this.send(['loadfile', request.streamUrl, 'replace']);
     this.send(['set_property', 'hwdec', 'auto-safe']);
     this.send(['observe_property', 1, 'time-pos']);
@@ -83,9 +91,11 @@ export class MpvAdapter implements PlayerEngine {
 
   private spawnMpv() {
     const spawnProcess = this.deps.spawnProcess ?? spawn;
+    this.ipcPath = this.deps.ipcPathFactory?.() ?? `\\\\.\\pipe\\titon-mpv-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     this.process = spawnProcess(this.mpvPath!, [
       '--idle=yes',
       '--force-window=yes',
+      `--input-ipc-server=${this.ipcPath}`,
       '--input-terminal=no',
       '--term-playing-msg=',
       '--msg-level=all=v',
@@ -100,12 +110,43 @@ export class MpvAdapter implements PlayerEngine {
     });
     this.process.on('exit', () => {
       this.process = null;
+      this.ipcSocket?.destroy();
+      this.ipcSocket = null;
       this.update({ ...this.state, status: this.state.status === 'idle' ? 'idle' : 'ended' });
     });
   }
 
   private send(command: unknown[]) {
-    this.process?.stdin.write(`${JSON.stringify({ command, request_id: this.requestId++ })}\n`);
+    this.ipcSocket?.write(`${JSON.stringify({ command, request_id: this.requestId++ })}\n`);
+  }
+
+  private async ensureIpc() {
+    if (this.ipcSocket) return;
+    if (!this.ipcPath) throw new Error('mpv IPC path was not initialized.');
+    const connect = this.deps.createIpcConnection ?? ((path: string) => this.connectIpcPipe(path));
+    this.ipcSocket = await connect(this.ipcPath);
+    this.ipcSocket.on('data', (chunk) => this.handleOutput(String(chunk)));
+    this.ipcSocket.on('error', (error: Error) => this.update({ ...this.state, status: 'failed', error: error.message }));
+    this.ipcSocket.on('close', () => {
+      this.ipcSocket = null;
+    });
+  }
+
+  private async connectIpcPipe(path: string): Promise<IpcSocket> {
+    const attempts = 50;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        return await new Promise<IpcSocket>((resolve, reject) => {
+          const socket = createConnection(path);
+          socket.once('connect', () => resolve(socket));
+          socket.once('error', reject);
+        });
+      } catch (error) {
+        if (attempt === attempts) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+    throw new Error('Unable to connect to mpv IPC pipe.');
   }
 
   private handleOutput(output: string) {
