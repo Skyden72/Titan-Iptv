@@ -112,6 +112,7 @@ export interface PlayerSurfaceBounds {
   width: number;
   height: number;
   visible: boolean;
+  parentWindowId?: string;
 }
 
 export interface TrackInfo {

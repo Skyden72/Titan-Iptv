@@ -4,7 +4,9 @@ import { MpvAdapter } from '../../electron/player/mpvAdapter';
 describe('MpvAdapter', () => {
   it('translates player controls into mpv JSON IPC commands', async () => {
     const writes: string[] = [];
+    const hostMpvWindow = vi.fn(async () => undefined);
     const spawnProcess = vi.fn(() => ({
+      pid: 4242,
       stdin: { write: vi.fn() },
       stdout: { on: vi.fn() },
       stderr: { on: vi.fn() },
@@ -14,6 +16,7 @@ describe('MpvAdapter', () => {
     const adapter = new MpvAdapter('mpv.exe', {
       spawnProcess,
       ipcPathFactory: () => '\\\\.\\pipe\\titon-test-mpv',
+      hostMpvWindow,
       createIpcConnection: vi.fn(async () => ({
         write: (value: string) => writes.push(value),
         on: vi.fn(),
@@ -21,7 +24,7 @@ describe('MpvAdapter', () => {
         destroy: vi.fn(),
       } as any)),
     });
-    adapter.setSurfaceBounds({ x: 100, y: 200, width: 640, height: 360, visible: true });
+    adapter.setSurfaceBounds({ x: 100, y: 200, width: 640, height: 360, visible: true, parentWindowId: '9001' });
 
     await adapter.start({ kind: 'movie', itemId: 'movie:1', title: 'Movie', streamUrl: 'http://example.test/movie.ts' });
     await adapter.command({ type: 'setVolume', volume: 70 });
@@ -32,17 +35,24 @@ describe('MpvAdapter', () => {
       '--no-config',
       '--force-window=immediate',
       '--border=no',
-      '--ontop',
       '--osc=no',
       '--osd-level=0',
       '--input-default-bindings=no',
       '--geometry=640x360+100+200',
       '--hwdec=no',
-      '--vo=direct3d',
+      '--vo=gpu-next',
+      '--gpu-api=d3d11',
+      '--gpu-context=d3d11',
       '--vd-lavc-dr=no',
     ]), expect.anything());
     expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.not.arrayContaining(['--force-window=yes']), expect.anything());
     expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.not.arrayContaining([expect.stringMatching(/^--wid=/)]), expect.anything());
+    expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.not.arrayContaining(['--ontop', '--vo=direct3d']), expect.anything());
+    expect(hostMpvWindow).toHaveBeenCalledWith({
+      pid: 4242,
+      parentWindowId: '9001',
+      bounds: { x: 100, y: 200, width: 640, height: 360, visible: true, parentWindowId: '9001' },
+    });
     expect(writes.join('\n')).toContain('"loadfile","http://example.test/movie.ts","replace"');
     expect(writes.join('\n')).not.toContain('"hwdec","auto-safe"');
     expect(writes.join('\n')).toContain('"set_property","volume",70');

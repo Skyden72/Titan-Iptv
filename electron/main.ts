@@ -24,19 +24,24 @@ if (squirrelStartup) {
 
 let mainWindow: BrowserWindow | null = null;
 
+function nativeWindowId(window: BrowserWindow): string {
+  const handle = window.getNativeWindowHandle();
+  return handle.length >= 8 ? handle.readBigUInt64LE(0).toString() : String(handle.readUInt32LE(0));
+}
+
 async function configurePlayerSurface(bounds: PlayerSurfaceBounds): Promise<PlayerSurfaceBounds | null> {
   if (!mainWindow || mainWindow.isDestroyed()) return null;
   if (!bounds.visible || bounds.width < 16 || bounds.height < 16) {
     return null;
   }
 
-  const contentBounds = mainWindow.getContentBounds();
   return {
-    x: Math.round(contentBounds.x + bounds.x),
-    y: Math.round(contentBounds.y + bounds.y),
+    x: Math.round(bounds.x),
+    y: Math.round(bounds.y),
     width: Math.max(16, Math.round(bounds.width)),
     height: Math.max(16, Math.round(bounds.height)),
     visible: true,
+    parentWindowId: nativeWindowId(mainWindow),
   };
 }
 
