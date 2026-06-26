@@ -99,10 +99,14 @@ export class MpvAdapter implements PlayerEngine {
     this.ipcPath = this.deps.ipcPathFactory?.() ?? `\\\\.\\pipe\\titon-mpv-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const surfaceArgs = this.surfaceBounds ? [`--geometry=${this.geometry(this.surfaceBounds)}`] : [];
     this.process = spawnProcess(this.mpvPath!, [
+      '--no-config',
       '--idle=yes',
       '--force-window=immediate',
-      '--no-border',
+      '--border=no',
       '--ontop',
+      '--osc=no',
+      '--osd-level=0',
+      '--input-default-bindings=no',
       '--title=Titon IPTV Player Video',
       ...surfaceArgs,
       `--input-ipc-server=${this.ipcPath}`,
@@ -111,8 +115,7 @@ export class MpvAdapter implements PlayerEngine {
       '--msg-level=all=v',
       '--audio-channels=auto',
       '--hwdec=no',
-      '--vo=gpu',
-      '--gpu-api=opengl',
+      '--vo=direct3d',
       '--vd-lavc-dr=no',
     ], { stdio: 'pipe', windowsHide: false }) as ChildProcessWithoutNullStreams;
 

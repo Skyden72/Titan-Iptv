@@ -29,13 +29,16 @@ describe('MpvAdapter', () => {
 
     expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.arrayContaining([
       '--input-ipc-server=\\\\.\\pipe\\titon-test-mpv',
+      '--no-config',
       '--force-window=immediate',
-      '--no-border',
+      '--border=no',
       '--ontop',
+      '--osc=no',
+      '--osd-level=0',
+      '--input-default-bindings=no',
       '--geometry=640x360+100+200',
       '--hwdec=no',
-      '--vo=gpu',
-      '--gpu-api=opengl',
+      '--vo=direct3d',
       '--vd-lavc-dr=no',
     ]), expect.anything());
     expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.not.arrayContaining(['--force-window=yes']), expect.anything());
