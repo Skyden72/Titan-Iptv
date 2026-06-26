@@ -9,14 +9,14 @@ export class PlayerService {
   constructor(
     private readonly engine: PlayerEngine,
     private readonly emit: (state: PlayerState) => void,
-    private readonly configureSurface?: (bounds: PlayerSurfaceBounds) => Promise<string | null>
+    private readonly configureSurface?: (bounds: PlayerSurfaceBounds) => Promise<PlayerSurfaceBounds | null>
   ) {
     this.engine.onState((state) => this.emit(state));
   }
 
   async setSurface(bounds: PlayerSurfaceBounds): Promise<void> {
-    const windowId = await this.configureSurface?.(bounds);
-    if (windowId !== undefined) this.engine.setSurfaceWindowId(windowId);
+    const surfaceBounds = await this.configureSurface?.(bounds);
+    if (surfaceBounds !== undefined) this.engine.setSurfaceBounds(surfaceBounds);
   }
 
   async start(request: PlaybackRequest): Promise<PlayerState> {

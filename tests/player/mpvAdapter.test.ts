@@ -21,7 +21,7 @@ describe('MpvAdapter', () => {
         destroy: vi.fn(),
       } as any)),
     });
-    adapter.setSurfaceWindowId('12345');
+    adapter.setSurfaceBounds({ x: 100, y: 200, width: 640, height: 360, visible: true });
 
     await adapter.start({ kind: 'movie', itemId: 'movie:1', title: 'Movie', streamUrl: 'http://example.test/movie.ts' });
     await adapter.command({ type: 'setVolume', volume: 70 });
@@ -29,12 +29,17 @@ describe('MpvAdapter', () => {
 
     expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.arrayContaining([
       '--input-ipc-server=\\\\.\\pipe\\titon-test-mpv',
-      '--wid=12345',
+      '--force-window=immediate',
+      '--no-border',
+      '--ontop',
+      '--geometry=640x360+100+200',
       '--hwdec=no',
       '--vo=gpu',
       '--gpu-api=opengl',
       '--vd-lavc-dr=no',
     ]), expect.anything());
+    expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.not.arrayContaining(['--force-window=yes']), expect.anything());
+    expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.not.arrayContaining([expect.stringMatching(/^--wid=/)]), expect.anything());
     expect(writes.join('\n')).toContain('"loadfile","http://example.test/movie.ts","replace"');
     expect(writes.join('\n')).not.toContain('"hwdec","auto-safe"');
     expect(writes.join('\n')).toContain('"set_property","volume",70');

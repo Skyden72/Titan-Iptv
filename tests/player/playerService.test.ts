@@ -8,7 +8,7 @@ describe('PlayerService', () => {
     const callbacks = new Set<(value: any) => void>();
     const emit = vi.fn();
     const service = new PlayerService({
-      setSurfaceWindowId: vi.fn(),
+      setSurfaceBounds: vi.fn(),
       start: vi.fn(async () => state),
       command: vi.fn(async () => state),
       stop: vi.fn(async () => state),

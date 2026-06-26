@@ -1,7 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createConnection, type Socket } from 'node:net';
 import type { PlayerCommand } from '../../shared/ipc.js';
-import type { PlaybackRequest, PlayerState, TrackInfo } from '../../types/app.js';
+import type { PlaybackRequest, PlayerState, PlayerSurfaceBounds, TrackInfo } from '../../types/app.js';
 import type { PlayerEngine } from './playerTypes.js';
 
 type IpcSocket = Pick<Socket, 'write' | 'on' | 'end' | 'destroy'>;
@@ -30,15 +30,16 @@ export class MpvAdapter implements PlayerEngine {
   private process: ChildProcessWithoutNullStreams | null = null;
   private ipcSocket: IpcSocket | null = null;
   private ipcPath: string | null = null;
-  private surfaceWindowId: string | null = null;
+  private surfaceBounds: PlayerSurfaceBounds | null = null;
   private state: PlayerState = idleState;
   private listeners = new Set<(state: PlayerState) => void>();
   private requestId = 1;
 
   constructor(private readonly mpvPath: string | undefined, private readonly deps: Deps = {}) {}
 
-  setSurfaceWindowId(windowId: string | null): void {
-    this.surfaceWindowId = windowId;
+  setSurfaceBounds(bounds: PlayerSurfaceBounds | null): void {
+    this.surfaceBounds = bounds;
+    if (bounds && this.process) this.send(['set_property', 'geometry', this.geometry(bounds)]);
   }
 
   async start(request: PlaybackRequest): Promise<PlayerState> {
@@ -96,9 +97,13 @@ export class MpvAdapter implements PlayerEngine {
   private spawnMpv() {
     const spawnProcess = this.deps.spawnProcess ?? spawn;
     this.ipcPath = this.deps.ipcPathFactory?.() ?? `\\\\.\\pipe\\titon-mpv-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const surfaceArgs = this.surfaceWindowId ? [`--wid=${this.surfaceWindowId}`] : ['--force-window=yes'];
+    const surfaceArgs = this.surfaceBounds ? [`--geometry=${this.geometry(this.surfaceBounds)}`] : [];
     this.process = spawnProcess(this.mpvPath!, [
       '--idle=yes',
+      '--force-window=immediate',
+      '--no-border',
+      '--ontop',
+      '--title=Titon IPTV Player Video',
       ...surfaceArgs,
       `--input-ipc-server=${this.ipcPath}`,
       '--input-terminal=no',
@@ -126,6 +131,10 @@ export class MpvAdapter implements PlayerEngine {
 
   private send(command: unknown[]) {
     this.ipcSocket?.write(`${JSON.stringify({ command, request_id: this.requestId++ })}\n`);
+  }
+
+  private geometry(bounds: PlayerSurfaceBounds): string {
+    return `${Math.max(16, Math.round(bounds.width))}x${Math.max(16, Math.round(bounds.height))}+${Math.round(bounds.x)}+${Math.round(bounds.y)}`;
   }
 
   private async ensureIpc() {

@@ -1,8 +1,8 @@
 import type { PlayerCommand } from '../../shared/ipc.js';
-import type { PlaybackRequest, PlayerState } from '../../types/app.js';
+import type { PlaybackRequest, PlayerState, PlayerSurfaceBounds } from '../../types/app.js';
 
 export interface PlayerEngine {
-  setSurfaceWindowId(windowId: string | null): void;
+  setSurfaceBounds(bounds: PlayerSurfaceBounds | null): void;
   start(request: PlaybackRequest): Promise<PlayerState>;
   command(command: PlayerCommand): Promise<PlayerState>;
   stop(): Promise<PlayerState>;

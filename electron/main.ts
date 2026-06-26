@@ -23,51 +23,21 @@ if (squirrelStartup) {
 }
 
 let mainWindow: BrowserWindow | null = null;
-let videoWindow: BrowserWindow | null = null;
 
-function nativeWindowId(window: BrowserWindow): string {
-  const handle = window.getNativeWindowHandle();
-  return handle.length >= 8 ? handle.readBigUInt64LE(0).toString() : String(handle.readUInt32LE(0));
-}
-
-async function configurePlayerSurface(bounds: PlayerSurfaceBounds): Promise<string | null> {
+async function configurePlayerSurface(bounds: PlayerSurfaceBounds): Promise<PlayerSurfaceBounds | null> {
   if (!mainWindow || mainWindow.isDestroyed()) return null;
   if (!bounds.visible || bounds.width < 16 || bounds.height < 16) {
-    videoWindow?.hide();
     return null;
   }
 
-  if (!videoWindow || videoWindow.isDestroyed()) {
-    videoWindow = new BrowserWindow({
-      parent: mainWindow,
-      frame: false,
-      show: false,
-      resizable: false,
-      movable: false,
-      minimizable: false,
-      maximizable: false,
-      closable: false,
-      skipTaskbar: true,
-      focusable: false,
-      backgroundColor: '#000000',
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        sandbox: true,
-      },
-    });
-    await videoWindow.loadURL('about:blank');
-  }
-
   const contentBounds = mainWindow.getContentBounds();
-  videoWindow.setBounds({
+  return {
     x: Math.round(contentBounds.x + bounds.x),
     y: Math.round(contentBounds.y + bounds.y),
     width: Math.max(16, Math.round(bounds.width)),
     height: Math.max(16, Math.round(bounds.height)),
-  });
-  videoWindow.showInactive();
-  return nativeWindowId(videoWindow);
+    visible: true,
+  };
 }
 
 const createWindow = () => {
