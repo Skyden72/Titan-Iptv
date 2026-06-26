@@ -15,6 +15,7 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
   const showControls = usePlayerStore((state) => state.showControls);
   const hideControls = usePlayerStore((state) => state.hideControls);
   const videoSurfaceRef = useRef<HTMLDivElement | null>(null);
+  const startedRequestKey = useRef<string | null>(null);
 
   usePlayerShortcuts(Boolean(request));
 
@@ -48,7 +49,23 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
   }, [request]);
 
   useEffect(() => {
-    if (request) start(request);
+    const surface = videoSurfaceRef.current;
+    if (!request || !surface) return;
+
+    const requestKey = `${request.kind}:${request.itemId}:${request.streamUrl}`;
+    if (startedRequestKey.current === requestKey) return;
+    startedRequestKey.current = requestKey;
+
+    const rect = surface.getBoundingClientRect();
+    window.titon
+      .setPlayerSurface({
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+        visible: true,
+      })
+      .then(() => start(request));
   }, [request, start]);
 
   if (!request) {

@@ -4,7 +4,7 @@ import { usePlayerStore } from '../store/playerStore';
 
 const Favourites: React.FC = () => {
   const { favourites, liveChannels, movies, series, episodes } = useAppStore((state) => state);
-  const start = usePlayerStore((state) => state.start);
+  const openPlayer = usePlayerStore((state) => state.open);
 
   const items = favourites.map((favourite) => {
     if (favourite.kind === 'live') return { favourite, item: liveChannels.find((channel) => channel.id === favourite.itemId), title: liveChannels.find((channel) => channel.id === favourite.itemId)?.name };
@@ -27,7 +27,7 @@ const Favourites: React.FC = () => {
                 <div className="text-xs text-slate-400">{favourite.kind}</div>
               </div>
               {playable && playbackKind && (
-                <button className="icon-button" title="Play" onClick={() => start({ kind: playbackKind, itemId: favourite.itemId, title: title ?? 'Favourite', streamUrl: playable.streamUrl })}>
+                <button className="icon-button" title="Play" onClick={() => openPlayer({ kind: playbackKind, itemId: favourite.itemId, title: title ?? 'Favourite', streamUrl: playable.streamUrl })}>
                   <Play className="h-4 w-4" />
                 </button>
               )}

@@ -14,7 +14,9 @@ const initialState: PlayerState = {
 
 type PlayerStore = {
   state: PlayerState;
+  currentRequest: PlaybackRequest | null;
   controlsVisible: boolean;
+  open: (request: PlaybackRequest) => void;
   start: (request: PlaybackRequest) => Promise<void>;
   command: (command: PlayerCommand) => Promise<void>;
   attach: () => () => void;
@@ -24,14 +26,18 @@ type PlayerStore = {
 
 export const usePlayerStore = create<PlayerStore>((set) => ({
   state: initialState,
+  currentRequest: null,
   controlsVisible: true,
+  open(request) {
+    set({ currentRequest: request, controlsVisible: true });
+  },
   async start(request) {
     const state = await window.titon.startPlayback(request);
     set({ state, controlsVisible: true });
   },
   async command(command) {
     const state = await window.titon.sendPlayerCommand(command);
-    set({ state });
+    set(command.type === 'stop' ? { state, currentRequest: null } : { state });
   },
   attach() {
     return window.titon.onPlayerState((state) => set({ state }));

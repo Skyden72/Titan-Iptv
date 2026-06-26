@@ -6,7 +6,7 @@ import type { Series as SeriesItem } from '../types/app';
 
 const Series: React.FC = () => {
   const { series, episodes, seriesCategories, favourites, toggleFavourite, progress } = useAppStore((state) => state);
-  const start = usePlayerStore((state) => state.start);
+  const openPlayer = usePlayerStore((state) => state.open);
   const [query, setQuery] = useState('');
   const [categoryId, setCategoryId] = useState('all');
   const [selected, setSelected] = useState<SeriesItem | null>(series[0] ?? null);
@@ -45,7 +45,7 @@ const Series: React.FC = () => {
                 const saved = progress.find((item) => item.kind === 'episode' && item.itemId === episode.id);
                 return (
                   <div key={episode.id} className="h-14 rounded-md bg-slate-900 border border-slate-800 px-3 flex items-center gap-3">
-                    <button className="icon-button" title="Play episode" onClick={() => start({ kind: 'episode', itemId: episode.id, title: `${selected.title} - ${episode.title}`, streamUrl: episode.streamUrl })}><Play className="h-4 w-4" /></button>
+                    <button className="icon-button" title="Play episode" onClick={() => openPlayer({ kind: 'episode', itemId: episode.id, title: `${selected.title} - ${episode.title}`, streamUrl: episode.streamUrl })}><Play className="h-4 w-4" /></button>
                     <div className="flex-1">
                       <div className="text-white">S{episode.seasonNumber} E{episode.episodeNumber}: {episode.title}</div>
                       {saved && <div className="text-xs text-slate-400">Resume at {Math.floor(saved.positionSeconds / 60)}m</div>}

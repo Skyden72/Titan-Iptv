@@ -32,7 +32,8 @@ describe('MpvAdapter', () => {
       '--wid=12345',
       '--hwdec=no',
       '--vo=gpu',
-      '--gpu-api=d3d11',
+      '--gpu-api=opengl',
+      '--vd-lavc-dr=no',
     ]), expect.anything());
     expect(writes.join('\n')).toContain('"loadfile","http://example.test/movie.ts","replace"');
     expect(writes.join('\n')).not.toContain('"hwdec","auto-safe"');

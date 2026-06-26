@@ -107,7 +107,8 @@ export class MpvAdapter implements PlayerEngine {
       '--audio-channels=auto',
       '--hwdec=no',
       '--vo=gpu',
-      '--gpu-api=d3d11',
+      '--gpu-api=opengl',
+      '--vd-lavc-dr=no',
     ], { stdio: 'pipe', windowsHide: false }) as ChildProcessWithoutNullStreams;
 
     this.process.stdout.on('data', (chunk) => this.handleOutput(String(chunk)));

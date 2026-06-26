@@ -1,15 +1,15 @@
 import { Heart, Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import Player from '../components/Player';
 import { useAppStore } from '../store/useAppStore';
-import type { LiveChannel, PlaybackRequest } from '../types/app';
+import { usePlayerStore } from '../store/playerStore';
+import type { LiveChannel } from '../types/app';
 
 const LiveTv: React.FC = () => {
   const { liveChannels, liveCategories, epg, favourites, toggleFavourite } = useAppStore((state) => state);
+  const openPlayer = usePlayerStore((state) => state.open);
   const [query, setQuery] = useState('');
   const [categoryId, setCategoryId] = useState<string>('all');
   const [selected, setSelected] = useState<LiveChannel | null>(liveChannels[0] ?? null);
-  const [request, setRequest] = useState<PlaybackRequest | null>(null);
 
   const filtered = useMemo(() => liveChannels.filter((channel) =>
     (categoryId === 'all' || channel.categoryId === categoryId) &&
@@ -21,7 +21,7 @@ const LiveTv: React.FC = () => {
 
   function play(channel: LiveChannel) {
     setSelected(channel);
-    setRequest({ kind: 'live', itemId: channel.id, title: channel.name, streamUrl: channel.streamUrl, playlistItemIds: filtered.map((item) => item.id) });
+    openPlayer({ kind: 'live', itemId: channel.id, title: channel.name, streamUrl: channel.streamUrl, playlistItemIds: filtered.map((item) => item.id) });
   }
 
   return (
@@ -45,9 +45,8 @@ const LiveTv: React.FC = () => {
           ))}
         </div>
       </aside>
-      <section className="min-h-0 grid grid-rows-[1fr_11rem]">
-        <Player request={request} />
-        <div className="border-t border-slate-800 bg-slate-900/80 p-4 overflow-y-auto">
+      <section className="min-h-0 bg-slate-950">
+        <div className="h-full bg-slate-900/80 p-4 overflow-y-auto">
           <h2 className="font-semibold text-white">{selected?.name ?? 'No channel selected'}</h2>
           <div className="mt-2 grid grid-cols-1 xl:grid-cols-2 gap-2">
             {schedule.map((programme) => <div key={programme.id} className="text-sm text-slate-300"><span className="text-slate-500">{new Date(programme.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> {programme.title}</div>)}
