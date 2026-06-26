@@ -1,110 +1,60 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useAppStore } from '../store/useAppStore';
-import { Channel } from '../types';
+import { Heart, Play } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import Player from '../components/Player';
-import { DISABLE_EPG } from '../lib/env';
-import { useRenderCounter } from '../lib/loopShield';
+import { useAppStore } from '../store/useAppStore';
+import type { LiveChannel, PlaybackRequest } from '../types/app';
 
 const LiveTv: React.FC = () => {
-  useRenderCounter('LiveTv');
-  
-  const channels = useAppStore((state) => state.channels);
-  const epgData = useAppStore((state) => state.epgData);
+  const { liveChannels, liveCategories, epg, favourites, toggleFavourite } = useAppStore((state) => state);
+  const [query, setQuery] = useState('');
+  const [categoryId, setCategoryId] = useState<string>('all');
+  const [selected, setSelected] = useState<LiveChannel | null>(liveChannels[0] ?? null);
+  const [request, setRequest] = useState<PlaybackRequest | null>(null);
 
-  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const initSelected = useRef(false);
-  useEffect(() => {
-    // This guarded effect runs only once to select the first channel when the list loads,
-    // preventing the re-render loop caused by the previous implementation.
-    if (initSelected.current) return;
-    if (!selectedChannel && channels.length > 0) {
-      initSelected.current = true;
-      setSelectedChannel(channels[0]);
-    }
-  }, [channels, selectedChannel]);
+  const filtered = useMemo(() => liveChannels.filter((channel) =>
+    (categoryId === 'all' || channel.categoryId === categoryId) &&
+    channel.name.toLowerCase().includes(query.toLowerCase())
+  ), [liveChannels, categoryId, query]);
 
-  const channelGroups = useMemo(() => {
-    const filteredChannels = channels.filter(c => 
-      c.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const schedule = selected ? epg.filter((programme) => programme.channelId === selected.id).slice(0, 12) : [];
+  const favouriteIds = new Set(favourites.filter((item) => item.kind === 'live').map((item) => item.itemId));
 
-    const groups: Record<string, Channel[]> = {};
-    for (const channel of filteredChannels) {
-      const group = channel.group || 'General';
-      if (!groups[group]) {
-        groups[group] = [];
-      }
-      groups[group].push(channel);
-    }
-    return groups;
-  }, [channels, searchQuery]);
+  function play(channel: LiveChannel) {
+    setSelected(channel);
+    setRequest({ kind: 'live', itemId: channel.id, title: channel.name, streamUrl: channel.streamUrl, playlistItemIds: filtered.map((item) => item.id) });
+  }
 
   return (
-    <div className="h-full flex flex-col md:flex-row bg-gray-900">
-      <aside className="w-full md:w-72 lg:w-80 bg-gray-800/50 flex-shrink-0 flex flex-col">
-        <div className="p-4">
-          <input
-            type="text"
-            placeholder="Search channels..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-brand-cyan focus:outline-none transition-all text-white"
-          />
+    <div className="h-full grid grid-cols-[22rem_1fr] bg-slate-950">
+      <aside className="min-h-0 border-r border-slate-800 flex flex-col">
+        <div className="p-4 space-y-3">
+          <input className="form-input" placeholder="Search channels" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <select className="form-input" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+            <option value="all">All categories</option>
+            {liveCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+          </select>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {Object.entries(channelGroups).map(([group, channelsInGroup]) => (
-            <div key={group}>
-              <h3 className="text-sm font-semibold text-gray-400 uppercase p-4 sticky top-0 bg-gray-800/80 backdrop-blur-sm">{group}</h3>
-              <ul>
-                {channelsInGroup.map((channel) => (
-                  <li key={channel.id}>
-                    <button
-                      onClick={() => setSelectedChannel(channel)}
-                      className={`w-full text-left flex items-center gap-x-3 p-3 transition-colors duration-150 ${
-                        selectedChannel?.id === channel.id
-                          ? 'bg-brand-cyan/20 text-white border-l-4 border-brand-cyan'
-                          : 'text-gray-300 hover:bg-gray-700/50'
-                      }`}
-                    >
-                      <img src={channel.logo} alt={channel.name} className="w-10 h-10 rounded-md object-cover bg-gray-700" />
-                      <span className="font-medium">{channel.name}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {filtered.map((channel) => (
+            <button key={channel.id} className={`w-full p-3 flex items-center gap-3 text-left hover:bg-slate-900 ${selected?.id === channel.id ? 'bg-slate-900 border-l-2 border-cyan-400' : ''}`} onClick={() => setSelected(channel)}>
+              <img src={channel.logoUrl || ''} alt="" className="h-10 w-10 rounded bg-slate-800 object-cover" />
+              <span className="flex-1 truncate">{channel.name}</span>
+              <Play className="h-4 w-4 text-cyan-300" onClick={(event) => { event.stopPropagation(); play(channel); }} />
+              <Heart className={`h-4 w-4 ${favouriteIds.has(channel.id) ? 'fill-cyan-300 text-cyan-300' : 'text-slate-500'}`} onClick={(event) => { event.stopPropagation(); toggleFavourite({ kind: 'live', itemId: channel.id, createdAt: new Date().toISOString() }); }} />
+            </button>
           ))}
         </div>
       </aside>
-      <main className="flex-1 bg-black">
-        {selectedChannel ? (
-          <div className="w-full h-full flex flex-col">
-            <div className="flex-1">
-                <Player streamUrl={selectedChannel.streamUrl} title={selectedChannel.name} />
-            </div>
-            <div className="p-4 bg-gray-800/80 h-32 overflow-y-auto">
-              <h3 className="text-lg font-bold text-white mb-2">EPG: {selectedChannel.name}</h3>
-              {DISABLE_EPG ? (
-                  <p className="text-yellow-500">EPG is disabled via environment config.</p>
-              ) : epgData[selectedChannel.id] ? (
-                <ul className="space-y-1">
-                  {epgData[selectedChannel.id].map(entry => (
-                    <li key={entry.start} className="text-gray-400 text-sm">
-                      <span className="font-semibold text-gray-200">{entry.start} - {entry.end}</span>: {entry.title}
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="text-gray-500">No EPG data available.</p>}
-            </div>
+      <section className="min-h-0 grid grid-rows-[1fr_11rem]">
+        <Player request={request} />
+        <div className="border-t border-slate-800 bg-slate-900/80 p-4 overflow-y-auto">
+          <h2 className="font-semibold text-white">{selected?.name ?? 'No channel selected'}</h2>
+          <div className="mt-2 grid grid-cols-1 xl:grid-cols-2 gap-2">
+            {schedule.map((programme) => <div key={programme.id} className="text-sm text-slate-300"><span className="text-slate-500">{new Date(programme.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> {programme.title}</div>)}
+            {selected && schedule.length === 0 && <p className="text-sm text-slate-500">No EPG data available for this channel.</p>}
           </div>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-500">
-            <p>Select a channel to start watching</p>
-          </div>
-        )}
-      </main>
+        </div>
+      </section>
     </div>
   );
 };
