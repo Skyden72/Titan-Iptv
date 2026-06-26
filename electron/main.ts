@@ -6,11 +6,13 @@ import os from 'node:os';
 import squirrelStartup from 'electron-squirrel-startup';
 import { fileURLToPath } from 'node:url';
 import type { PlayerCommand } from '../shared/ipc.js';
-import type { PlaybackRequest, PlayerState } from '../types/app.js';
 import { createDatabase, resolveDatabasePath } from './storage/database.js';
 import { createRepositories } from './storage/repositories.js';
 import { registerHandlers } from './ipc/registerHandlers.js';
 import { XtreamClient } from './xtream/client.js';
+import { locateMpv } from './player/mpvLocator.js';
+import { MpvAdapter } from './player/mpvAdapter.js';
+import { PlayerService } from './player/playerService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,38 +22,6 @@ if (squirrelStartup) {
 }
 
 let mainWindow: BrowserWindow | null = null;
-
-const idlePlayerState: PlayerState = {
-  status: 'idle',
-  positionSeconds: 0,
-  volume: 100,
-  muted: false,
-  fullscreen: false,
-  audioTracks: [],
-  subtitleTracks: [],
-};
-
-function createPlaceholderPlayerService() {
-  let state = idlePlayerState;
-  return {
-    async start(request: PlaybackRequest) {
-      state = {
-        ...state,
-        status: 'failed',
-        title: request.title,
-        itemId: request.itemId,
-        error: 'Native mpv playback is not wired yet.',
-      };
-      return state;
-    },
-    async command(_command: PlayerCommand) {
-      return state;
-    },
-    state() {
-      return state;
-    },
-  };
-}
 
 const createWindow = () => {
   mainWindow = new BrowserWindow({
@@ -85,12 +55,13 @@ const createWindow = () => {
   return mainWindow;
 };
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   const dbPath = resolveDatabasePath(app.getPath('userData'));
   const db = createDatabase(dbPath);
   const repositories = createRepositories(db);
   const win = createWindow();
-  const playerService = createPlaceholderPlayerService();
+  const mpv = await locateMpv(app.getAppPath());
+  const playerService = new PlayerService(new MpvAdapter(mpv.path), (state) => win.webContents.send('player:state', state));
 
   registerHandlers({
     ipcMain,
@@ -104,7 +75,8 @@ app.whenReady().then(() => {
         appVersion: app.getVersion(),
         electronVersion: process.versions.electron,
         platform: `${os.platform()} ${os.release()}`,
-        mpvAvailable: false,
+        mpvAvailable: mpv.available,
+        mpvPath: mpv.path,
         databasePath: dbPath,
         catalogCounts: {
           live: snapshot.liveChannels.length,
@@ -112,7 +84,7 @@ app.whenReady().then(() => {
           series: snapshot.series.length,
           epg: snapshot.epg.length,
         },
-        recentErrors: ['Native mpv playback is not wired yet.'],
+        recentErrors: mpv.available ? [] : [mpv.message],
       };
     },
   });
