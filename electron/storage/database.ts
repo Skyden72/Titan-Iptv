@@ -139,7 +139,9 @@ function openDatabase(filename: string): AppDatabase {
   try {
     return new Database(filename) as AppDatabase;
   } catch (error) {
-    if (!String(error).includes('Could not locate the bindings file')) {
+    const message = String(error);
+    const canFallback = message.includes('Could not locate the bindings file') || message.includes('NODE_MODULE_VERSION') || message.includes('compiled against a different Node.js version');
+    if (!canFallback) {
       throw error;
     }
     return createNodeSqliteDatabase(filename);

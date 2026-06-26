@@ -9,9 +9,15 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-electron
+release
 dist-ssr
 *.local
 .superpowers/
+
+# Local mpv runtime binaries can be large; keep instructions tracked.
+resources/mpv/*
+!resources/mpv/README.md
 
 # Editor directories and files
 .vscode/*

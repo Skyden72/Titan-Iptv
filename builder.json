@@ -1,26 +1,33 @@
-
 {
-  "appId": "com.zenith.iptvplayer",
+  "appId": "com.skyden.titoniptvplayer",
   "productName": "Titon IPTV Player",
-  "copyright": "Copyright © 2024 Your Company",
+  "copyright": "Copyright © 2026",
   "directories": {
-    "output": "dist",
+    "output": "release",
     "buildResources": "build"
   },
   "files": [
+    "dist/**/*",
     "dist-electron/**/*",
-    "dist/**/*"
+    "package.json"
   ],
-  "main": "dist-electron/main.js",
+  "extraResources": [
+    {
+      "from": "resources/mpv",
+      "to": "resources/mpv",
+      "filter": ["**/*"]
+    }
+  ],
   "win": {
-    "target": "nsis",
-    "icon": "build/icon.ico"
+    "target": ["nsis", "portable"],
+    "icon": "build/icon.ico",
+    "signAndEditExecutable": false
   },
   "nsis": {
-    "oneClick": true,
-    "perMachine": true,
+    "oneClick": false,
+    "perMachine": false,
     "allowElevation": true,
-    "allowToChangeInstallationDirectory": false,
+    "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true
   }
