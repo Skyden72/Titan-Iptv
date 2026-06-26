@@ -44,7 +44,6 @@ export class MpvAdapter implements PlayerEngine {
     this.update({ ...this.state, status: 'connecting', title: request.title, itemId: request.itemId, error: undefined });
     await this.ensureIpc();
     this.send(['loadfile', request.streamUrl, 'replace']);
-    this.send(['set_property', 'hwdec', 'auto-safe']);
     this.send(['observe_property', 1, 'time-pos']);
     this.send(['observe_property', 2, 'duration']);
     this.send(['observe_property', 3, 'pause']);
@@ -100,7 +99,9 @@ export class MpvAdapter implements PlayerEngine {
       '--term-playing-msg=',
       '--msg-level=all=v',
       '--audio-channels=auto',
-      '--hwdec=auto-safe',
+      '--hwdec=no',
+      '--vo=gpu',
+      '--gpu-api=d3d11',
     ], { stdio: 'pipe', windowsHide: false }) as ChildProcessWithoutNullStreams;
 
     this.process.stdout.on('data', (chunk) => this.handleOutput(String(chunk)));

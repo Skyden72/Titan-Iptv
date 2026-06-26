@@ -26,8 +26,14 @@ describe('MpvAdapter', () => {
     await adapter.command({ type: 'setVolume', volume: 70 });
     await adapter.command({ type: 'selectAudioTrack', id: 2 });
 
-    expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.arrayContaining(['--input-ipc-server=\\\\.\\pipe\\titon-test-mpv']), expect.anything());
+    expect(spawnProcess).toHaveBeenCalledWith('mpv.exe', expect.arrayContaining([
+      '--input-ipc-server=\\\\.\\pipe\\titon-test-mpv',
+      '--hwdec=no',
+      '--vo=gpu',
+      '--gpu-api=d3d11',
+    ]), expect.anything());
     expect(writes.join('\n')).toContain('"loadfile","http://example.test/movie.ts","replace"');
+    expect(writes.join('\n')).not.toContain('"hwdec","auto-safe"');
     expect(writes.join('\n')).toContain('"set_property","volume",70');
     expect(writes.join('\n')).toContain('"set_property","aid",2');
   });
