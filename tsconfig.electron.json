@@ -8,13 +8,13 @@
     "strict": true,
     "noImplicitAny": false,
     "types": ["node"],
-    "rootDir": "electron",
+    "rootDir": ".",
     "outDir": "dist-electron",
     "sourceMap": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["electron/**/*.ts"],
+  "include": ["electron/**/*.ts", "shared/**/*.ts", "types/**/*.ts"],
   "exclude": ["dist", "dist-electron", "node_modules", "tests"]
 }

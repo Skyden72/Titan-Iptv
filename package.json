@@ -9,7 +9,7 @@
     "dev": "vite --host 127.0.0.1 --port 5173",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "build:renderer": "vite build",
-    "build:electron": "tsc -p tsconfig.electron.json",
+    "build:electron": "tsc -p tsconfig.electron.json && node scripts/copy-electron-entry.mjs",
     "typecheck": "tsc -p tsconfig.renderer.json --noEmit && tsc -p tsconfig.electron.json --noEmit false",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -1,13 +1,38 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { ipcChannels, type PlayerCommand, type TitonBridge } from '../shared/ipc.js';
+import type {
+  AppSettings,
+  Favourite,
+  PlaybackRequest,
+  RefreshProgress,
+  PlayerState,
+  XtreamCredentials,
+} from '../types/app.js';
 
-// Expose a secure API for the renderer process to make network requests
-// through the main process, bypassing CORS.
-contextBridge.exposeInMainWorld('electronNet', {
-  request: (req: {
-    url: string;
-    method?: string;
-    headers?: Record<string, string>;
-    body?: string;
-    timeoutMs?: number;
-  }) => ipcRenderer.invoke('net:request', req)
-});
+const bridge: TitonBridge = {
+  appReady: () => ipcRenderer.invoke(ipcChannels.appReady),
+  connectProfile: (input: { name: string; credentials: XtreamCredentials }) =>
+    ipcRenderer.invoke(ipcChannels.profilesConnect, input),
+  disconnectProfile: () => ipcRenderer.invoke(ipcChannels.profilesDisconnect),
+  getCatalog: () => ipcRenderer.invoke(ipcChannels.catalogGet),
+  refreshCatalog: () => ipcRenderer.invoke(ipcChannels.catalogRefresh),
+  getSeriesEpisodes: (seriesId: string) => ipcRenderer.invoke(ipcChannels.seriesEpisodes, seriesId),
+  toggleFavourite: (input: Favourite) => ipcRenderer.invoke(ipcChannels.favouritesToggle, input),
+  startPlayback: (input: PlaybackRequest) => ipcRenderer.invoke(ipcChannels.playerStart, input),
+  sendPlayerCommand: (command: PlayerCommand) => ipcRenderer.invoke(ipcChannels.playerCommand, command),
+  getSettings: () => ipcRenderer.invoke(ipcChannels.settingsGet),
+  saveSettings: (settings: AppSettings) => ipcRenderer.invoke(ipcChannels.settingsSave, settings),
+  getDiagnostics: () => ipcRenderer.invoke(ipcChannels.diagnosticsGet),
+  onRefreshProgress: (callback: (progress: RefreshProgress) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, progress: RefreshProgress) => callback(progress);
+    ipcRenderer.on(ipcChannels.catalogRefresh, listener);
+    return () => ipcRenderer.off(ipcChannels.catalogRefresh, listener);
+  },
+  onPlayerState: (callback: (state: PlayerState) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, state: PlayerState) => callback(state);
+    ipcRenderer.on(ipcChannels.playerState, listener);
+    return () => ipcRenderer.off(ipcChannels.playerState, listener);
+  },
+};
+
+contextBridge.exposeInMainWorld('titon', bridge);
