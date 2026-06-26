@@ -1,33 +1,36 @@
-import React from 'react';
-import { useRenderCounter } from '../lib/loopShield';
-import { DISABLE_PLAYER } from '../lib/env';
+import { useEffect } from 'react';
+import type { PlaybackRequest } from '../types/app';
+import { usePlayerStore } from '../store/playerStore';
+import PlayerOverlay from './player/PlayerOverlay';
+import { usePlayerShortcuts } from './player/usePlayerShortcuts';
 
-interface PlayerProps {
-  streamUrl: string;
-  title: string;
-}
+type PlayerProps = {
+  request: PlaybackRequest | null;
+};
 
-const Player: React.FC<PlayerProps> = ({ streamUrl, title }) => {
-  useRenderCounter('Player');
+const Player: React.FC<PlayerProps> = ({ request }) => {
+  const start = usePlayerStore((state) => state.start);
+  const playerState = usePlayerStore((state) => state.state);
+  const controlsVisible = usePlayerStore((state) => state.controlsVisible);
+  const showControls = usePlayerStore((state) => state.showControls);
+  const hideControls = usePlayerStore((state) => state.hideControls);
 
-  if (DISABLE_PLAYER) {
-    return <div className="w-full h-full flex items-center justify-center bg-black text-white">Player is disabled via environment config.</div>
+  usePlayerShortcuts(Boolean(request));
+
+  useEffect(() => {
+    if (request) start(request);
+  }, [request, start]);
+
+  if (!request) {
+    return <div className="h-full w-full bg-black flex items-center justify-center text-slate-500">Select something to play</div>;
   }
-  
+
   return (
-    <div className="w-full h-full bg-black flex flex-col items-center justify-center text-white relative">
-      <video
-        className="w-full h-full"
-        src={streamUrl}
-        controls
-        autoPlay
-        playsInline
-      >
-        Your browser does not support the video tag.
-      </video>
-      <div className="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-black/70 to-transparent">
-        <h2 className="text-xl font-bold">{title}</h2>
+    <div className="relative h-full w-full bg-black overflow-hidden" onMouseMove={showControls} onMouseLeave={hideControls}>
+      <div className="absolute inset-0 flex items-center justify-center text-slate-500">
+        {playerState.status === 'connecting' || playerState.status === 'buffering' ? playerState.status : 'mpv playback window'}
       </div>
+      {controlsVisible && <PlayerOverlay />}
     </div>
   );
 };
