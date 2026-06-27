@@ -1,9 +1,12 @@
 import { Heart, Play } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { usePlayerStore } from '../store/playerStore';
 import type { LiveChannel } from '../types/app';
 import Player from '../components/Player';
+
+const channelRowHeight = 64;
+const overscanRows = 8;
 
 const LiveTv: React.FC = () => {
   const { liveChannels, liveCategories, epg, favourites, toggleFavourite } = useAppStore((state) => state);
@@ -12,14 +15,37 @@ const LiveTv: React.FC = () => {
   const [query, setQuery] = useState('');
   const [categoryId, setCategoryId] = useState<string>('all');
   const [selected, setSelected] = useState<LiveChannel | null>(liveChannels[0] ?? null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [listHeight, setListHeight] = useState(0);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   const filtered = useMemo(() => liveChannels.filter((channel) =>
     (categoryId === 'all' || channel.categoryId === categoryId) &&
     channel.name.toLowerCase().includes(query.toLowerCase())
   ), [liveChannels, categoryId, query]);
 
-  const schedule = selected ? epg.filter((programme) => programme.channelId === selected.id).slice(0, 12) : [];
-  const favouriteIds = new Set(favourites.filter((item) => item.kind === 'live').map((item) => item.itemId));
+  const visibleCount = Math.ceil((listHeight || 640) / channelRowHeight) + overscanRows * 2;
+  const startIndex = Math.max(0, Math.floor(scrollTop / channelRowHeight) - overscanRows);
+  const endIndex = Math.min(filtered.length, startIndex + visibleCount);
+  const visibleChannels = filtered.slice(startIndex, endIndex);
+  const schedule = useMemo(() => selected ? epg.filter((programme) => programme.channelId === selected.id).slice(0, 12) : [], [epg, selected]);
+  const favouriteIds = useMemo(() => new Set(favourites.filter((item) => item.kind === 'live').map((item) => item.itemId)), [favourites]);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+
+    const updateHeight = () => setListHeight(list.clientHeight);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    setScrollTop(0);
+    listRef.current?.scrollTo({ top: 0 });
+  }, [categoryId, query]);
 
   function play(channel: LiveChannel) {
     setSelected(channel);
@@ -36,15 +62,19 @@ const LiveTv: React.FC = () => {
             {liveCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
         </div>
-        <div className="flex-1 overflow-y-auto">
-          {filtered.map((channel) => (
-            <button key={channel.id} className={`w-full p-3 flex items-center gap-3 text-left hover:bg-slate-900 ${selected?.id === channel.id ? 'bg-slate-900 border-l-2 border-cyan-400' : ''}`} onClick={() => play(channel)}>
-              <img src={channel.logoUrl || ''} alt="" className="h-10 w-10 rounded bg-slate-800 object-cover" />
-              <span className="flex-1 truncate">{channel.name}</span>
-              <Play className="h-4 w-4 text-cyan-300" onClick={(event) => { event.stopPropagation(); play(channel); }} />
-              <Heart className={`h-4 w-4 ${favouriteIds.has(channel.id) ? 'fill-cyan-300 text-cyan-300' : 'text-slate-500'}`} onClick={(event) => { event.stopPropagation(); toggleFavourite({ kind: 'live', itemId: channel.id, createdAt: new Date().toISOString() }); }} />
-            </button>
-          ))}
+        <div ref={listRef} className="flex-1 overflow-y-auto" onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}>
+          <div className="relative" style={{ height: filtered.length * channelRowHeight }}>
+            <div className="absolute inset-x-0 top-0" style={{ transform: `translateY(${startIndex * channelRowHeight}px)` }}>
+              {visibleChannels.map((channel) => (
+                <button key={channel.id} className={`w-full h-16 px-3 flex items-center gap-3 text-left hover:bg-slate-900 ${selected?.id === channel.id ? 'bg-slate-900 border-l-2 border-cyan-400' : ''}`} onClick={() => play(channel)}>
+                  <img src={channel.logoUrl || ''} alt="" loading="lazy" className="h-10 w-10 rounded bg-slate-800 object-cover" />
+                  <span className="flex-1 truncate">{channel.name}</span>
+                  <Play className="h-4 w-4 text-cyan-300" onClick={(event) => { event.stopPropagation(); play(channel); }} />
+                  <Heart className={`h-4 w-4 ${favouriteIds.has(channel.id) ? 'fill-cyan-300 text-cyan-300' : 'text-slate-500'}`} onClick={(event) => { event.stopPropagation(); toggleFavourite({ kind: 'live', itemId: channel.id, createdAt: new Date().toISOString() }); }} />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </aside>
       <section className="min-h-0 bg-slate-950 p-4 flex flex-col gap-4 overflow-hidden">
