@@ -20,6 +20,7 @@ describe('registerHandlers', () => {
       playerService: { start: vi.fn(), command: vi.fn(), setSurface: vi.fn(), state: vi.fn() } as any,
       diagnostics: vi.fn(),
       setWindowFullscreen: vi.fn(),
+      getCursorPosition: vi.fn(() => ({ x: 0, y: 0 })),
     });
 
     expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.appReady, expect.any(Function));
@@ -27,6 +28,7 @@ describe('registerHandlers', () => {
     expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.playerStart, expect.any(Function));
     expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.playerSurfaceSet, expect.any(Function));
     expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.windowFullscreenSet, expect.any(Function));
+    expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.windowCursorPositionGet, expect.any(Function));
     expect(ipcMain.handle).toHaveBeenCalledWith(ipcChannels.diagnosticsGet, expect.any(Function));
   });
 });

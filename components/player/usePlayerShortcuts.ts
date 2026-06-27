@@ -19,6 +19,10 @@ export function usePlayerShortcuts(enabled: boolean) {
       if (event.key === 'ArrowDown') command({ type: 'setVolume', volume: 40 });
       if (event.key.toLowerCase() === 'm') command({ type: 'mute', muted: true });
       if (event.key.toLowerCase() === 'f') command({ type: 'fullscreen', fullscreen: !fullscreen });
+      if (event.key === 'Escape' && fullscreen) {
+        event.preventDefault();
+        command({ type: 'fullscreen', fullscreen: false });
+      }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);

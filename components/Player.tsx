@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { PlaybackRequest } from '../types/app';
 import { usePlayerStore } from '../store/playerStore';
 import PlayerOverlay from './player/PlayerOverlay';
@@ -17,21 +17,22 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
   const videoSurfaceRef = useRef<HTMLDivElement | null>(null);
   const startedRequestKey = useRef<string | null>(null);
   const hideControlsTimer = useRef<number | null>(null);
+  const cursorPosition = useRef<{ x: number; y: number } | null>(null);
   const isFullscreen = playerState.fullscreen;
 
   usePlayerShortcuts(Boolean(request));
 
-  const scheduleControlsHide = () => {
+  const scheduleControlsHide = useCallback(() => {
     if (hideControlsTimer.current) window.clearTimeout(hideControlsTimer.current);
     if (!isFullscreen || !request) return;
-    hideControlsTimer.current = window.setTimeout(() => hideControls(), 2600);
-  };
+    hideControlsTimer.current = window.setTimeout(() => hideControls(), 3000);
+  }, [hideControls, isFullscreen, request]);
 
-  const revealControls = () => {
+  const revealControls = useCallback(() => {
     if (!isFullscreen) return;
     showControls();
     scheduleControlsHide();
-  };
+  }, [isFullscreen, scheduleControlsHide, showControls]);
 
   useEffect(() => {
     if (!isFullscreen || !request) {
@@ -44,7 +45,26 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
     return () => {
       if (hideControlsTimer.current) window.clearTimeout(hideControlsTimer.current);
     };
-  }, [hideControls, isFullscreen, request, showControls]);
+  }, [isFullscreen, request, scheduleControlsHide, showControls]);
+
+  useEffect(() => {
+    if (!isFullscreen || !request) return;
+
+    let cancelled = false;
+    const interval = window.setInterval(async () => {
+      const next = await window.titon.getCursorPosition();
+      if (cancelled) return;
+      const previous = cursorPosition.current;
+      cursorPosition.current = next;
+      if (previous && (previous.x !== next.x || previous.y !== next.y)) revealControls();
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      cursorPosition.current = null;
+    };
+  }, [isFullscreen, request, revealControls]);
 
   useLayoutEffect(() => {
     const surface = videoSurfaceRef.current;
@@ -73,7 +93,7 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
       window.removeEventListener('resize', updateSurface);
       window.titon.setPlayerSurface({ x: 0, y: 0, width: 0, height: 0, visible: false });
     };
-  }, [request]);
+  }, [controlsVisible, isFullscreen, request]);
 
   useEffect(() => {
     const surface = videoSurfaceRef.current;
@@ -104,13 +124,13 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
 
   return (
     <div
-      className={`${isFullscreen && !controlsVisible ? 'cursor-none' : ''} relative h-full w-full bg-black ${isFullscreen ? 'overflow-hidden' : 'grid grid-rows-[1fr_auto] overflow-hidden'}`}
+      className={`${isFullscreen && !controlsVisible ? 'cursor-none' : ''} h-full w-full bg-black grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out ${isFullscreen && !controlsVisible ? 'grid-rows-[minmax(0,1fr)_0px]' : 'grid-rows-[minmax(0,1fr)_auto]'}`}
       onMouseMove={revealControls}
     >
-      <div ref={videoSurfaceRef} className={`${isFullscreen ? 'absolute inset-0' : 'min-h-0'} flex items-center justify-center text-slate-500`}>
+      <div ref={videoSurfaceRef} className="min-h-0 flex items-center justify-center text-slate-500">
         {playerState.status === 'connecting' || playerState.status === 'buffering' ? playerState.status : 'mpv playback window'}
       </div>
-      <div className={isFullscreen ? `absolute inset-x-0 bottom-0 z-10 transition duration-300 ease-out ${controlsVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}` : ''}>
+      <div className={`${isFullscreen ? 'overflow-hidden transition duration-300 ease-out' : ''} ${isFullscreen && !controlsVisible ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
         <PlayerOverlay />
       </div>
     </div>

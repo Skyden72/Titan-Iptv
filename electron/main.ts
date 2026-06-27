@@ -1,6 +1,6 @@
 // FIX: Convert from CommonJS (require) to ES modules (import) to resolve issues with Node.js type definitions.
 // This modern syntax is better supported by TypeScript and Electron tooling.
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, screen } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
 import squirrelStartup from 'electron-squirrel-startup';
@@ -100,6 +100,7 @@ app.whenReady().then(async () => {
       win.setFullScreen(fullscreen);
       return fullscreen;
     },
+    getCursorPosition: () => screen.getCursorScreenPoint(),
     diagnostics: () => {
       const snapshot = repositories.catalog.snapshot();
       return {
