@@ -19,18 +19,18 @@ const LiveTv: React.FC = () => {
   const [scrollTop, setScrollTop] = useState(0);
   const [listHeight, setListHeight] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const favouriteIds = useMemo(() => new Set(favourites.filter((item) => item.kind === 'live').map((item) => item.itemId)), [favourites]);
 
   const filtered = useMemo(() => liveChannels.filter((channel) =>
-    (categoryId === 'all' || channel.categoryId === categoryId) &&
+    (categoryId === 'all' || (categoryId === 'favourites' ? favouriteIds.has(channel.id) : channel.categoryId === categoryId)) &&
     channel.name.toLowerCase().includes(query.toLowerCase())
-  ), [liveChannels, categoryId, query]);
+  ), [liveChannels, categoryId, favouriteIds, query]);
 
   const visibleCount = Math.ceil((listHeight || 640) / channelRowHeight) + overscanRows * 2;
   const startIndex = Math.max(0, Math.floor(scrollTop / channelRowHeight) - overscanRows);
   const endIndex = Math.min(filtered.length, startIndex + visibleCount);
   const visibleChannels = filtered.slice(startIndex, endIndex);
   const schedule = useMemo(() => selected ? epg.filter((programme) => programme.channelId === selected.id).slice(0, 12) : [], [epg, selected]);
-  const favouriteIds = useMemo(() => new Set(favourites.filter((item) => item.kind === 'live').map((item) => item.itemId)), [favourites]);
 
   useEffect(() => {
     const list = listRef.current;
@@ -58,7 +58,12 @@ const LiveTv: React.FC = () => {
       <aside className="min-h-0 border-r border-slate-800 flex flex-col">
         <div className="p-4 space-y-3">
           <input className="form-input" placeholder="Search channels" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <button className={`w-full h-11 rounded-md border px-3 flex items-center justify-between text-left ${categoryId === 'favourites' ? 'border-cyan-400 bg-cyan-950/50 text-white' : 'border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800'}`} onClick={() => setCategoryId(categoryId === 'favourites' ? 'all' : 'favourites')}>
+            <span className="flex items-center gap-2"><Heart className="h-4 w-4 text-cyan-300" /> Favourites</span>
+            <span className="text-xs text-slate-400">{favouriteIds.size}</span>
+          </button>
           <select className="form-input" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+            <option value="favourites">Favourites</option>
             <option value="all">All categories</option>
             {liveCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>

@@ -1,7 +1,7 @@
 {
   "name": "titon-iptv-player",
   "productName": "Titon IPTV Player",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Windows desktop Xtream Codes IPTV player with native mpv playback",
   "main": "dist-electron/main.js",
   "type": "module",

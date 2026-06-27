@@ -15,6 +15,7 @@ const initialState: PlayerState = {
 type PlayerStore = {
   state: PlayerState;
   currentRequest: PlaybackRequest | null;
+  activeRequestKey: string | null;
   controlsVisible: boolean;
   open: (request: PlaybackRequest) => void;
   start: (request: PlaybackRequest) => Promise<void>;
@@ -24,16 +25,26 @@ type PlayerStore = {
   hideControls: () => void;
 };
 
-export const usePlayerStore = create<PlayerStore>((set) => ({
+function playbackKey(request: PlaybackRequest): string {
+  return `${request.kind}:${request.itemId}:${request.streamUrl}`;
+}
+
+export const usePlayerStore = create<PlayerStore>((set, get) => ({
   state: initialState,
   currentRequest: null,
+  activeRequestKey: null,
   controlsVisible: true,
   open(request) {
     set({ currentRequest: request, controlsVisible: true });
   },
   async start(request) {
+    const key = playbackKey(request);
+    if (get().activeRequestKey === key) {
+      set({ controlsVisible: true });
+      return;
+    }
     const state = await window.titon.startPlayback(request);
-    set({ state, controlsVisible: true });
+    set((current) => ({ state: { ...state, fullscreen: current.state.fullscreen }, activeRequestKey: key, controlsVisible: true }));
   },
   async command(command) {
     if (command.type === 'fullscreen') {
@@ -45,7 +56,11 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
       await window.titon.setWindowFullscreen(false);
     }
     const state = await window.titon.sendPlayerCommand(command);
-    set(command.type === 'stop' ? { state: { ...state, fullscreen: false }, currentRequest: null } : { state });
+    set((current) => (
+      command.type === 'stop'
+        ? { state: { ...state, fullscreen: false }, currentRequest: null, activeRequestKey: null }
+        : { state: { ...state, fullscreen: current.state.fullscreen } }
+    ));
   },
   attach() {
     return window.titon.onPlayerState((state) => set((current) => ({ state: { ...state, fullscreen: current.state.fullscreen } })));
