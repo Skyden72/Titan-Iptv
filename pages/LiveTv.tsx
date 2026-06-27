@@ -12,6 +12,7 @@ const LiveTv: React.FC = () => {
   const { liveChannels, liveCategories, epg, favourites, toggleFavourite } = useAppStore((state) => state);
   const openPlayer = usePlayerStore((state) => state.open);
   const currentRequest = usePlayerStore((state) => state.currentRequest);
+  const fullscreen = usePlayerStore((state) => state.state.fullscreen);
   const [query, setQuery] = useState('');
   const [categoryId, setCategoryId] = useState<string>('all');
   const [selected, setSelected] = useState<LiveChannel | null>(liveChannels[0] ?? null);
@@ -79,7 +80,7 @@ const LiveTv: React.FC = () => {
       </aside>
       <section className="min-h-0 bg-slate-950 p-4 flex flex-col gap-4 overflow-hidden">
         <div className="aspect-video max-h-[52vh] min-h-[18rem] overflow-hidden rounded-md border border-slate-800 bg-black">
-          <Player request={currentRequest} />
+          {fullscreen ? <div className="h-full w-full bg-black" /> : <Player request={currentRequest} />}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-slate-800 bg-slate-900/80 p-4">
           <h2 className="font-semibold text-white">{selected?.name ?? 'No channel selected'}</h2>

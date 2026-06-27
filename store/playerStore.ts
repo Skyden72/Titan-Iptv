@@ -37,19 +37,18 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   },
   async command(command) {
     if (command.type === 'fullscreen') {
-      if (command.fullscreen) {
-        await document.documentElement.requestFullscreen?.();
-      } else if (document.fullscreenElement) {
-        await document.exitFullscreen?.();
-      }
-      set((current) => ({ state: { ...current.state, fullscreen: command.fullscreen } }));
+      const fullscreen = await window.titon.setWindowFullscreen(command.fullscreen);
+      set((current) => ({ state: { ...current.state, fullscreen } }));
       return;
     }
+    if (command.type === 'stop') {
+      await window.titon.setWindowFullscreen(false);
+    }
     const state = await window.titon.sendPlayerCommand(command);
-    set(command.type === 'stop' ? { state, currentRequest: null } : { state });
+    set(command.type === 'stop' ? { state: { ...state, fullscreen: false }, currentRequest: null } : { state });
   },
   attach() {
-    return window.titon.onPlayerState((state) => set({ state }));
+    return window.titon.onPlayerState((state) => set((current) => ({ state: { ...state, fullscreen: current.state.fullscreen } })));
   },
   showControls() {
     set({ controlsVisible: true });

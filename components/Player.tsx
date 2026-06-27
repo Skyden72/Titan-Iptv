@@ -11,10 +11,8 @@ type PlayerProps = {
 const Player: React.FC<PlayerProps> = ({ request }) => {
   const start = usePlayerStore((state) => state.start);
   const playerState = usePlayerStore((state) => state.state);
-  const command = usePlayerStore((state) => state.command);
   const videoSurfaceRef = useRef<HTMLDivElement | null>(null);
   const startedRequestKey = useRef<string | null>(null);
-  const fullscreen = playerState.fullscreen;
 
   usePlayerShortcuts(Boolean(request));
 
@@ -45,18 +43,7 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
       window.removeEventListener('resize', updateSurface);
       window.titon.setPlayerSurface({ x: 0, y: 0, width: 0, height: 0, visible: false });
     };
-  }, [request, fullscreen]);
-
-  useEffect(() => {
-    const syncFullscreen = () => {
-      if (!document.fullscreenElement && fullscreen) {
-        command({ type: 'fullscreen', fullscreen: false });
-      }
-    };
-
-    document.addEventListener('fullscreenchange', syncFullscreen);
-    return () => document.removeEventListener('fullscreenchange', syncFullscreen);
-  }, [command, fullscreen]);
+  }, [request]);
 
   useEffect(() => {
     const surface = videoSurfaceRef.current;
@@ -86,7 +73,7 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
   }
 
   return (
-    <div className={`${fullscreen ? 'fixed inset-0 z-[100] h-screen w-screen' : 'h-full w-full'} bg-black grid grid-rows-[1fr_auto] overflow-hidden`}>
+    <div className="h-full w-full bg-black grid grid-rows-[1fr_auto] overflow-hidden">
       <div ref={videoSurfaceRef} className="min-h-0 flex items-center justify-center text-slate-500">
         {playerState.status === 'connecting' || playerState.status === 'buffering' ? playerState.status : 'mpv playback window'}
       </div>

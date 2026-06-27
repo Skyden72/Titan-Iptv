@@ -25,6 +25,7 @@ export const ipcChannels = {
   playerCommand: 'player:command',
   playerSurfaceSet: 'player:surface:set',
   playerState: 'player:state',
+  windowFullscreenSet: 'window:fullscreen:set',
   settingsGet: 'settings:get',
   settingsSave: 'settings:save',
   diagnosticsGet: 'diagnostics:get',
@@ -53,6 +54,7 @@ export interface TitonBridge {
   startPlayback(input: PlaybackRequest): Promise<PlayerState>;
   sendPlayerCommand(command: PlayerCommand): Promise<PlayerState>;
   setPlayerSurface(bounds: PlayerSurfaceBounds): Promise<void>;
+  setWindowFullscreen(fullscreen: boolean): Promise<boolean>;
   getSettings(): Promise<AppSettings>;
   saveSettings(settings: AppSettings): Promise<AppSettings>;
   getDiagnostics(): Promise<DiagnosticSnapshot>;
@@ -71,6 +73,7 @@ export type InvokeMap = {
   [ipcChannels.playerStart]: { request: PlaybackRequest; response: PlayerState };
   [ipcChannels.playerCommand]: { request: PlayerCommand; response: PlayerState };
   [ipcChannels.playerSurfaceSet]: { request: PlayerSurfaceBounds; response: void };
+  [ipcChannels.windowFullscreenSet]: { request: boolean; response: boolean };
   [ipcChannels.settingsGet]: { request: void; response: AppSettings };
   [ipcChannels.settingsSave]: { request: AppSettings; response: AppSettings };
   [ipcChannels.diagnosticsGet]: { request: void; response: DiagnosticSnapshot };

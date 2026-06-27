@@ -95,6 +95,11 @@ app.whenReady().then(async () => {
     createXtreamClient: (credentials) => new XtreamClient(credentials),
     playerService,
     sendToRenderer: (channel, payload) => win.webContents.send(channel, payload),
+    setWindowFullscreen: (fullscreen) => {
+      if (win.isDestroyed()) return false;
+      win.setFullScreen(fullscreen);
+      return fullscreen;
+    },
     diagnostics: () => {
       const snapshot = repositories.catalog.snapshot();
       return {

@@ -16,6 +16,7 @@ const ipcChannels = {
   playerStart: 'player:start',
   playerCommand: 'player:command',
   playerSurfaceSet: 'player:surface:set',
+  windowFullscreenSet: 'window:fullscreen:set',
   settingsGet: 'settings:get',
   settingsSave: 'settings:save',
   diagnosticsGet: 'diagnostics:get',
@@ -33,6 +34,7 @@ type RegisterInput = {
     state(): any;
   };
   diagnostics: () => Promise<any> | any;
+  setWindowFullscreen: (fullscreen: boolean) => boolean;
 };
 
 function now() {
@@ -83,6 +85,7 @@ export function registerHandlers(input: RegisterInput) {
   ipcMain.handle(ipcChannels.playerStart, async (_event, request: PlaybackRequest) => playerService.start(request));
   ipcMain.handle(ipcChannels.playerCommand, async (_event, command: PlayerCommand) => playerService.command(command));
   ipcMain.handle(ipcChannels.playerSurfaceSet, async (_event, bounds: PlayerSurfaceBounds) => playerService.setSurface(bounds));
+  ipcMain.handle(ipcChannels.windowFullscreenSet, async (_event, fullscreen: boolean) => input.setWindowFullscreen(fullscreen));
   ipcMain.handle(ipcChannels.settingsGet, async () => repositories.catalog.snapshot().settings);
   ipcMain.handle(ipcChannels.settingsSave, async (_event, settings: AppSettings) => repositories.settings.save(settings));
   ipcMain.handle(ipcChannels.diagnosticsGet, async () => input.diagnostics());
