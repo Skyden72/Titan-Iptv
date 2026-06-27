@@ -50,7 +50,10 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
 
   useEffect(() => {
     const surface = videoSurfaceRef.current;
-    if (!request || !surface) return;
+    if (!request || !surface) {
+      startedRequestKey.current = null;
+      return;
+    }
 
     const requestKey = `${request.kind}:${request.itemId}:${request.streamUrl}`;
     if (startedRequestKey.current === requestKey) return;
