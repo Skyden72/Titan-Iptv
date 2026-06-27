@@ -36,6 +36,15 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
     set({ state, controlsVisible: true });
   },
   async command(command) {
+    if (command.type === 'fullscreen') {
+      if (command.fullscreen) {
+        await document.documentElement.requestFullscreen?.();
+      } else if (document.fullscreenElement) {
+        await document.exitFullscreen?.();
+      }
+      set((current) => ({ state: { ...current.state, fullscreen: command.fullscreen } }));
+      return;
+    }
     const state = await window.titon.sendPlayerCommand(command);
     set(command.type === 'stop' ? { state, currentRequest: null } : { state });
   },

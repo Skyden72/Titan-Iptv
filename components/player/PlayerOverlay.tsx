@@ -1,4 +1,4 @@
-import { Maximize2, Pause, Play, SkipBack, SkipForward, Square, Volume2, VolumeX } from 'lucide-react';
+import { Maximize2, Minimize2, Pause, Play, SkipBack, SkipForward, Square, Volume2, VolumeX } from 'lucide-react';
 import { usePlayerStore } from '../../store/playerStore';
 
 function formatTime(value?: number) {
@@ -31,7 +31,9 @@ const PlayerOverlay: React.FC = () => {
           <button className="icon-button" title="Next" onClick={() => command({ type: 'next' })}><SkipForward className="h-5 w-5" /></button>
           <button className="icon-button" title={state.muted ? 'Unmute' : 'Mute'} onClick={() => command({ type: 'mute', muted: !state.muted })}>{state.muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
           <input aria-label="Volume" type="range" min={0} max={100} value={state.volume} onChange={(event) => command({ type: 'setVolume', volume: Number(event.target.value) })} />
-          <button className="icon-button" title="Fullscreen" onClick={() => command({ type: 'fullscreen', fullscreen: !state.fullscreen })}><Maximize2 className="h-5 w-5" /></button>
+          <button className="icon-button" title={state.fullscreen ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => command({ type: 'fullscreen', fullscreen: !state.fullscreen })}>
+            {state.fullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+          </button>
         </div>
       </div>
       {canSeek && (

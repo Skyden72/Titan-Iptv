@@ -3,6 +3,7 @@ import { usePlayerStore } from '../../store/playerStore';
 
 export function usePlayerShortcuts(enabled: boolean) {
   const command = usePlayerStore((state) => state.command);
+  const fullscreen = usePlayerStore((state) => state.state.fullscreen);
   useEffect(() => {
     if (!enabled) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -17,9 +18,9 @@ export function usePlayerShortcuts(enabled: boolean) {
       if (event.key === 'ArrowUp') command({ type: 'setVolume', volume: 100 });
       if (event.key === 'ArrowDown') command({ type: 'setVolume', volume: 40 });
       if (event.key.toLowerCase() === 'm') command({ type: 'mute', muted: true });
-      if (event.key.toLowerCase() === 'f') command({ type: 'fullscreen', fullscreen: true });
+      if (event.key.toLowerCase() === 'f') command({ type: 'fullscreen', fullscreen: !fullscreen });
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [command, enabled]);
+  }, [command, enabled, fullscreen]);
 }
