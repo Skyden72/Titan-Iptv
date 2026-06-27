@@ -11,10 +11,40 @@ type PlayerProps = {
 const Player: React.FC<PlayerProps> = ({ request }) => {
   const start = usePlayerStore((state) => state.start);
   const playerState = usePlayerStore((state) => state.state);
+  const controlsVisible = usePlayerStore((state) => state.controlsVisible);
+  const showControls = usePlayerStore((state) => state.showControls);
+  const hideControls = usePlayerStore((state) => state.hideControls);
   const videoSurfaceRef = useRef<HTMLDivElement | null>(null);
   const startedRequestKey = useRef<string | null>(null);
+  const hideControlsTimer = useRef<number | null>(null);
+  const isFullscreen = playerState.fullscreen;
 
   usePlayerShortcuts(Boolean(request));
+
+  const scheduleControlsHide = () => {
+    if (hideControlsTimer.current) window.clearTimeout(hideControlsTimer.current);
+    if (!isFullscreen || !request) return;
+    hideControlsTimer.current = window.setTimeout(() => hideControls(), 2600);
+  };
+
+  const revealControls = () => {
+    if (!isFullscreen) return;
+    showControls();
+    scheduleControlsHide();
+  };
+
+  useEffect(() => {
+    if (!isFullscreen || !request) {
+      showControls();
+      return;
+    }
+
+    showControls();
+    scheduleControlsHide();
+    return () => {
+      if (hideControlsTimer.current) window.clearTimeout(hideControlsTimer.current);
+    };
+  }, [hideControls, isFullscreen, request, showControls]);
 
   useLayoutEffect(() => {
     const surface = videoSurfaceRef.current;
@@ -73,11 +103,16 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
   }
 
   return (
-    <div className="h-full w-full bg-black grid grid-rows-[1fr_auto] overflow-hidden">
-      <div ref={videoSurfaceRef} className="min-h-0 flex items-center justify-center text-slate-500">
+    <div
+      className={`${isFullscreen && !controlsVisible ? 'cursor-none' : ''} relative h-full w-full bg-black ${isFullscreen ? 'overflow-hidden' : 'grid grid-rows-[1fr_auto] overflow-hidden'}`}
+      onMouseMove={revealControls}
+    >
+      <div ref={videoSurfaceRef} className={`${isFullscreen ? 'absolute inset-0' : 'min-h-0'} flex items-center justify-center text-slate-500`}>
         {playerState.status === 'connecting' || playerState.status === 'buffering' ? playerState.status : 'mpv playback window'}
       </div>
-      <PlayerOverlay />
+      <div className={isFullscreen ? `absolute inset-x-0 bottom-0 z-10 transition duration-300 ease-out ${controlsVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}` : ''}>
+        <PlayerOverlay />
+      </div>
     </div>
   );
 };
