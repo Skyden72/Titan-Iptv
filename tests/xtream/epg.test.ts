@@ -50,4 +50,21 @@ describe('parseXmlTv', () => {
 
     expect(programme.title).toContain('Sport & News');
   });
+
+  it('maps one XMLTV channel onto multiple stream variants', () => {
+    const xml = `<?xml version="1.0"?>
+      <tv>
+        <programme start="20260626080000 +0200" stop="20260626090000 +0200" channel="premiersports1.uk">
+          <title>Match Day</title>
+        </programme>
+      </tv>`;
+
+    const result = parseXmlTv(xml, new Map([['premiersports1.uk', ['live:1', 'live:2']]]));
+
+    expect(result.map((programme) => programme.channelId)).toEqual(['live:1', 'live:2']);
+    expect(result.map((programme) => programme.id)).toEqual([
+      'live:1:20260626080000 +0200',
+      'live:2:20260626080000 +0200',
+    ]);
+  });
 });

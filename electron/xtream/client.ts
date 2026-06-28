@@ -87,8 +87,8 @@ export class XtreamClient {
   }
 }
 
-function buildEpgChannelMap(liveChannels: LiveChannel[]): Map<string, string> {
-  const map = new Map<string, string>();
+function buildEpgChannelMap(liveChannels: LiveChannel[]): Map<string, string[]> {
+  const map = new Map<string, string[]>();
   for (const channel of liveChannels) {
     const aliases = [
       channel.epgChannelId,
@@ -98,7 +98,9 @@ function buildEpgChannelMap(liveChannels: LiveChannel[]): Map<string, string> {
     ].filter((value): value is string => Boolean(value));
 
     for (const alias of aliases) {
-      if (!map.has(alias)) map.set(alias, channel.id);
+      const channelIds = map.get(alias) ?? [];
+      if (!channelIds.includes(channel.id)) channelIds.push(channel.id);
+      map.set(alias, channelIds);
     }
   }
   return map;

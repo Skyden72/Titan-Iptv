@@ -30,10 +30,11 @@ const LiveTv: React.FC = () => {
   const startIndex = Math.max(0, Math.floor(scrollTop / channelRowHeight) - overscanRows);
   const endIndex = Math.min(filtered.length, startIndex + visibleCount);
   const visibleChannels = filtered.slice(startIndex, endIndex);
-  const schedule = useMemo(() => selected ? epg.filter((programme) => programme.channelId === selected.id).slice(0, 12) : [], [epg, selected]);
+  const schedule = useMemo(() => selected ? epg.filter((programme) => programme.channelId === selected.id) : [], [epg, selected]);
   const now = Date.now();
   const currentProgramme = schedule.find((programme) => new Date(programme.startAt).getTime() <= now && new Date(programme.endAt).getTime() > now);
-  const upcomingProgrammes = schedule.filter((programme) => new Date(programme.startAt).getTime() > now).slice(0, 5);
+  const guideProgrammes = schedule.filter((programme) => new Date(programme.endAt).getTime() > now).slice(0, 12);
+  const upcomingProgrammes = guideProgrammes.filter((programme) => programme.id !== currentProgramme?.id).slice(0, 5);
 
   useEffect(() => {
     const list = listRef.current;
@@ -104,7 +105,7 @@ const LiveTv: React.FC = () => {
                   <p className="mt-1 text-sm text-slate-500">{selected ? 'No current EPG programme available.' : 'Choose a channel to see EPG.'}</p>
                 )}
               </div>
-              {schedule.length > 0 && <div className="text-xs text-slate-500 shrink-0">{schedule.length} guide items</div>}
+              {guideProgrammes.length > 0 && <div className="text-xs text-slate-500 shrink-0">{guideProgrammes.length} guide items</div>}
             </div>
             <div className="mt-3 grid grid-cols-1 xl:grid-cols-5 gap-2">
               {upcomingProgrammes.map((programme) => (
@@ -119,8 +120,8 @@ const LiveTv: React.FC = () => {
         <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-slate-800 bg-slate-900/80 p-4">
           <h2 className="font-semibold text-white">Full channel guide</h2>
           <div className="mt-2 grid grid-cols-1 xl:grid-cols-2 gap-2">
-            {schedule.map((programme) => <div key={programme.id} className="text-sm text-slate-300"><span className="text-slate-500">{new Date(programme.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> {programme.title}</div>)}
-            {selected && schedule.length === 0 && <p className="text-sm text-slate-500">No EPG data available for this channel.</p>}
+            {guideProgrammes.map((programme) => <div key={programme.id} className="text-sm text-slate-300"><span className="text-slate-500">{new Date(programme.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> {programme.title}</div>)}
+            {selected && guideProgrammes.length === 0 && <p className="text-sm text-slate-500">No EPG data available for this channel.</p>}
           </div>
         </div>
       </section>

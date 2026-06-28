@@ -41,23 +41,24 @@ type ParseXmlTvOptions = {
   to?: Date;
 };
 
-export function parseXmlTv(xml: string, channelMap: Map<string, string>, options: ParseXmlTvOptions = {}): EpgProgramme[] {
+export function parseXmlTv(xml: string, channelMap: Map<string, string | string[]>, options: ParseXmlTvOptions = {}): EpgProgramme[] {
   const parsed = parser.parse(xml);
   const programmes = arrayify<any>(parsed?.tv?.programme);
   return programmes.flatMap((programme) => {
-    const channelId = channelMap.get(String(programme.channel));
-    if (!channelId || !programme.start || !programme.stop) return [];
+    const mapped = channelMap.get(String(programme.channel));
+    const channelIds = Array.isArray(mapped) ? mapped : mapped ? [mapped] : [];
+    if (channelIds.length === 0 || !programme.start || !programme.stop) return [];
     const startAt = parseXmlTvDate(String(programme.start));
     const endAt = parseXmlTvDate(String(programme.stop));
     if (options.from && new Date(endAt) <= options.from) return [];
     if (options.to && new Date(startAt) >= options.to) return [];
-    return [{
+    return channelIds.map((channelId) => ({
       id: `${channelId}:${programme.start}`,
       channelId,
       startAt,
       endAt,
       title: readText(programme.title) || 'Untitled',
       description: readText(programme.desc) || undefined,
-    }];
+    }));
   });
 }
