@@ -23,6 +23,17 @@ if (squirrelStartup) {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let playerService: PlayerService | null = null;
+
+function sendToWindow(window: BrowserWindow, channel: string, payload: unknown): void {
+  if (window.isDestroyed() || window.webContents.isDestroyed()) return;
+  try {
+    window.webContents.send(channel, payload);
+  } catch (error) {
+    if (String(error).includes('Object has been destroyed')) return;
+    throw error;
+  }
+}
 
 function nativeWindowId(window: BrowserWindow): string {
   const handle = window.getNativeWindowHandle();
@@ -74,6 +85,11 @@ const createWindow = () => {
     return { action: 'deny' };
   });
 
+  mainWindow.on('closed', () => {
+    if (mainWindow === null) return;
+    mainWindow = null;
+  });
+
   return mainWindow;
 };
 
@@ -83,18 +99,19 @@ app.whenReady().then(async () => {
   const repositories = createRepositories(db);
   const win = createWindow();
   const mpv = await locateMpv(app.getAppPath());
-  const playerService = new PlayerService(
+  const service = new PlayerService(
     new MpvAdapter(mpv.path),
-    (state) => win.webContents.send('player:state', state),
+    (state) => sendToWindow(win, 'player:state', state),
     configurePlayerSurface
   );
+  playerService = service;
 
   registerHandlers({
     ipcMain,
     repositories,
     createXtreamClient: (credentials) => new XtreamClient(credentials),
-    playerService,
-    sendToRenderer: (channel, payload) => win.webContents.send(channel, payload),
+    playerService: service,
+    sendToRenderer: (channel, payload) => sendToWindow(win, channel, payload),
     setWindowFullscreen: (fullscreen) => {
       if (win.isDestroyed()) return false;
       win.setFullScreen(fullscreen);
@@ -120,6 +137,11 @@ app.whenReady().then(async () => {
       };
     },
   });
+});
+
+app.on('before-quit', () => {
+  playerService?.dispose();
+  playerService = null;
 });
 
 app.on('window-all-closed', () => {

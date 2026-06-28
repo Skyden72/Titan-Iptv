@@ -22,4 +22,29 @@ describe('PlayerService', () => {
     await expect(service.start({ kind: 'live', itemId: 'live:1', title: 'Channel', streamUrl: 'http://example.test/live.ts' })).resolves.toBe(state);
     expect(emit).toHaveBeenCalledWith(state);
   });
+
+  it('detaches playback state listeners when disposed', () => {
+    const state: PlayerState = { status: 'playing', positionSeconds: 0, volume: 100, muted: false, fullscreen: false, audioTracks: [], subtitleTracks: [] };
+    const callbacks = new Set<(value: any) => void>();
+    const emit = vi.fn();
+    const stop = vi.fn(async () => state);
+    const service = new PlayerService({
+      setSurfaceBounds: vi.fn(),
+      start: vi.fn(async () => state),
+      command: vi.fn(async () => state),
+      stop,
+      currentState: vi.fn(() => state),
+      onState: vi.fn((callback) => {
+        callbacks.add(callback);
+        return () => callbacks.delete(callback);
+      }),
+    }, emit);
+
+    service.dispose();
+    for (const callback of callbacks) callback(state);
+
+    expect(emit).not.toHaveBeenCalled();
+    expect(callbacks.size).toBe(0);
+    expect(stop).toHaveBeenCalled();
+  });
 });

@@ -5,13 +5,15 @@ import type { PlayerEngine } from './playerTypes.js';
 export class PlayerService {
   private playlist: string[] = [];
   private activeRequest: PlaybackRequest | null = null;
+  private disposed = false;
+  private readonly unsubscribe: () => void;
 
   constructor(
     private readonly engine: PlayerEngine,
     private readonly emit: (state: PlayerState) => void,
     private readonly configureSurface?: (bounds: PlayerSurfaceBounds) => Promise<PlayerSurfaceBounds | null>
   ) {
-    this.engine.onState((state) => this.emit(state));
+    this.unsubscribe = this.engine.onState((state) => this.emitState(state));
   }
 
   async setSurface(bounds: PlayerSurfaceBounds): Promise<void> {
@@ -23,17 +25,29 @@ export class PlayerService {
     this.activeRequest = request;
     this.playlist = request.playlistItemIds ?? [];
     const state = await this.engine.start(request);
-    this.emit(state);
+    this.emitState(state);
     return state;
   }
 
   async command(command: PlayerCommand): Promise<PlayerState> {
     const state = await this.engine.command(command);
-    this.emit(state);
+    this.emitState(state);
     return state;
   }
 
   state(): PlayerState {
     return this.engine.currentState();
+  }
+
+  dispose(): void {
+    this.disposed = true;
+    this.unsubscribe();
+    this.engine.setSurfaceBounds(null);
+    void this.engine.stop().catch(() => undefined);
+  }
+
+  private emitState(state: PlayerState): void {
+    if (this.disposed) return;
+    this.emit(state);
   }
 }
