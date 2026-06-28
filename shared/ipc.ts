@@ -18,6 +18,7 @@ export const ipcChannels = {
   profilesDisconnect: 'profiles:disconnect',
   catalogGet: 'catalog:get',
   catalogRefresh: 'catalog:refresh',
+  epgRefresh: 'epg:refresh',
   seriesEpisodes: 'series:episodes',
   favouritesToggle: 'favourites:toggle',
   progressSave: 'progress:save',
@@ -50,6 +51,7 @@ export interface TitonBridge {
   disconnectProfile(): Promise<void>;
   getCatalog(): Promise<CatalogSnapshot>;
   refreshCatalog(): Promise<void>;
+  refreshEpg(): Promise<void>;
   getSeriesEpisodes(seriesId: string): Promise<Episode[]>;
   toggleFavourite(input: Favourite): Promise<Favourite[]>;
   startPlayback(input: PlaybackRequest): Promise<PlayerState>;
@@ -70,6 +72,7 @@ export type InvokeMap = {
   [ipcChannels.profilesDisconnect]: { request: void; response: void };
   [ipcChannels.catalogGet]: { request: void; response: CatalogSnapshot };
   [ipcChannels.catalogRefresh]: { request: void; response: void };
+  [ipcChannels.epgRefresh]: { request: void; response: void };
   [ipcChannels.seriesEpisodes]: { request: string; response: Episode[] };
   [ipcChannels.favouritesToggle]: { request: Favourite; response: Favourite[] };
   [ipcChannels.playerStart]: { request: PlaybackRequest; response: PlayerState };

@@ -24,6 +24,11 @@ type CatalogReplaceInput = {
   epg: EpgProgramme[];
 };
 
+type EpgSyncOptions = {
+  from?: Date;
+  to?: Date;
+};
+
 const defaultSettings: AppSettings = {
   hardwareAcceleration: true,
   subtitlesEnabled: true,
@@ -91,7 +96,6 @@ export function createRepositories(db: AppDatabase) {
         db.prepare('delete from movies').run();
         db.prepare('delete from series').run();
         db.prepare('delete from episodes').run();
-        db.prepare('delete from epg_programmes').run();
 
         const categoryStmt = db.prepare('insert into categories (id, kind, name, sort_order) values (@id, @kind, @name, @sortOrder)');
         for (const category of [...input.liveCategories, ...input.movieCategories, ...input.seriesCategories]) categoryStmt.run(category);
@@ -133,10 +137,16 @@ export function createRepositories(db: AppDatabase) {
           });
         }
 
-        const epgStmt = db.prepare('insert into epg_programmes (id, channel_id, start_at, end_at, title, description) values (@id, @channelId, @startAt, @endAt, @title, @description)');
-        for (const programme of input.epg) {
-          epgStmt.run({ ...programme, description: programme.description ?? null });
-        }
+        db.prepare('delete from epg_programmes where channel_id not in (select id from live_channels)').run();
+        upsertEpg(input.epg);
+      });
+      tx();
+    },
+    upsertEpg(programmes: EpgProgramme[], options: EpgSyncOptions = {}) {
+      const tx = db.transaction(() => {
+        if (options.from) db.prepare('delete from epg_programmes where end_at <= ?').run(options.from.toISOString());
+        if (options.to) db.prepare('delete from epg_programmes where start_at >= ?').run(options.to.toISOString());
+        upsertEpg(programmes);
       });
       tx();
     },
@@ -173,6 +183,28 @@ export function createRepositories(db: AppDatabase) {
       };
     },
   };
+
+  function upsertEpg(programmes: EpgProgramme[]) {
+    const epgStmt = db.prepare(`
+      insert into epg_programmes (id, channel_id, start_at, end_at, title, description)
+      values (@id, @channelId, @startAt, @endAt, @title, @description)
+      on conflict(id) do update set
+        channel_id = excluded.channel_id,
+        start_at = excluded.start_at,
+        end_at = excluded.end_at,
+        title = excluded.title,
+        description = excluded.description
+      where
+        epg_programmes.channel_id is not excluded.channel_id or
+        epg_programmes.start_at is not excluded.start_at or
+        epg_programmes.end_at is not excluded.end_at or
+        epg_programmes.title is not excluded.title or
+        epg_programmes.description is not excluded.description
+    `);
+    for (const programme of programmes) {
+      epgStmt.run({ ...programme, description: programme.description ?? null });
+    }
+  }
 
   const favourites = {
     toggle(favourite: Favourite): Favourite[] {

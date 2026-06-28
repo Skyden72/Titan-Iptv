@@ -10,6 +10,7 @@ type AppState = CatalogSnapshot & {
   connect: (input: { name: string; serverUrl: string; username: string; password: string }) => Promise<void>;
   disconnect: () => Promise<void>;
   refresh: () => Promise<void>;
+  refreshEpg: () => Promise<void>;
   toggleFavourite: (favourite: Favourite) => Promise<void>;
 };
 
@@ -38,6 +39,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const snapshot = await window.titon.appReady();
       set({ ...snapshot, booted: true, loading: false });
+      if (snapshot.profile && snapshot.liveChannels.length > 0) void get().refreshEpg();
     } catch (error) {
       unsubscribe();
       set({ error: error instanceof Error ? error.message : String(error), booted: true, loading: false });
@@ -68,6 +70,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ ...snapshot, loading: false });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : String(error), loading: false });
+    }
+  },
+  async refreshEpg() {
+    try {
+      await window.titon.refreshEpg();
+      const snapshot = await window.titon.getCatalog();
+      set({ epg: snapshot.epg, refreshProgress: undefined });
+    } catch {
+      set({ refreshProgress: undefined });
     }
   },
   async toggleFavourite(favourite) {

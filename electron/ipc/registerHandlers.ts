@@ -10,6 +10,7 @@ const ipcChannels = {
   profilesDisconnect: 'profiles:disconnect',
   catalogGet: 'catalog:get',
   catalogRefresh: 'catalog:refresh',
+  epgRefresh: 'epg:refresh',
   seriesEpisodes: 'series:episodes',
   favouritesToggle: 'favourites:toggle',
   progressSave: 'progress:save',
@@ -76,6 +77,21 @@ export function registerHandlers(input: RegisterInput) {
     const result = await client.refresh((progress: RefreshProgress) => sendToRenderer(ipcChannels.catalogRefresh, progress));
     repositories.catalog.replace(result);
     sendToRenderer(ipcChannels.catalogRefresh, { phase: 'complete', message: 'Provider refresh complete', completed: 7, total: 7 });
+  });
+
+  ipcMain.handle(ipcChannels.epgRefresh, async () => {
+    const profile = repositories.profiles.current();
+    if (!profile) throw new Error('Connect an Xtream profile before refreshing EPG.');
+    const snapshot = repositories.catalog.snapshot();
+    if (snapshot.liveChannels.length === 0) return;
+    const client = createXtreamClient({ serverUrl: profile.serverUrl, username: profile.username, password: profile.password });
+    const now = new Date();
+    const programmes = await client.refreshEpg(snapshot.liveChannels, (progress: RefreshProgress) => sendToRenderer(ipcChannels.catalogRefresh, progress));
+    repositories.catalog.upsertEpg(programmes, {
+      from: new Date(now.getTime() - 12 * 60 * 60 * 1000),
+      to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+    });
+    sendToRenderer(ipcChannels.catalogRefresh, { phase: 'complete', message: 'EPG updated', completed: 1, total: 1 });
   });
 
   ipcMain.handle(ipcChannels.seriesEpisodes, async (_event, seriesId: string) =>

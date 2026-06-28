@@ -94,6 +94,8 @@ create table if not exists epg_programmes (
   title text not null,
   description text
 );
+create index if not exists idx_epg_programmes_channel_start on epg_programmes (channel_id, start_at);
+create index if not exists idx_epg_programmes_window on epg_programmes (start_at, end_at);
 create table if not exists favourites (
   kind text not null,
   item_id text not null,

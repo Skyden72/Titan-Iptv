@@ -20,4 +20,20 @@ describe('parseXmlTv', () => {
       description: 'Headlines',
     }]);
   });
+
+  it('limits programme entries to the requested guide window', () => {
+    const xml = `<?xml version="1.0"?>
+      <tv>
+        <programme start="20260625080000 +0200" stop="20260625090000 +0200" channel="news"><title>Old</title></programme>
+        <programme start="20260626080000 +0200" stop="20260626090000 +0200" channel="news"><title>Current</title></programme>
+        <programme start="20260704080000 +0200" stop="20260704090000 +0200" channel="news"><title>Future</title></programme>
+      </tv>`;
+
+    const result = parseXmlTv(xml, new Map([['news', 'live:10']]), {
+      from: new Date('2026-06-26T00:00:00.000Z'),
+      to: new Date('2026-07-03T00:00:00.000Z'),
+    });
+
+    expect(result.map((programme) => programme.title)).toEqual(['Current']);
+  });
 });

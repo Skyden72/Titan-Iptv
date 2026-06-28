@@ -1,5 +1,5 @@
 import { fetch } from 'undici';
-import type { RefreshProgress, XtreamCredentials } from '../../types/app.js';
+import type { EpgProgramme, LiveChannel, RefreshProgress, XtreamCredentials } from '../../types/app.js';
 import { parseXmlTv } from './epg.js';
 import { normalizeCategories, normalizeLive, normalizeMovies, normalizeSeries, normalizeSeriesDetails } from './normalize.js';
 import { buildPlayerApiUrl, buildXmlTvUrl, redactCredentialedUrl } from './urls.js';
@@ -61,8 +61,7 @@ export class XtreamClient {
 
     onProgress({ phase: 'epg', message: 'Loading EPG', completed: 5, total: 7 });
     const liveChannels = normalizeLive(this.credentials, liveRaw);
-    const epgChannelMap = new Map(liveChannels.flatMap((channel) => channel.epgChannelId ? [[channel.epgChannelId, channel.id] as const] : []));
-    const epg = await getText(buildXmlTvUrl(this.credentials)).then((xml) => parseXmlTv(xml, epgChannelMap)).catch(() => []);
+    const epg = await this.refreshEpg(liveChannels, onProgress).catch(() => []);
 
     onProgress({ phase: 'saving', message: 'Saving provider data', completed: 6, total: 7 });
     return {
@@ -77,4 +76,30 @@ export class XtreamClient {
       epg,
     };
   }
+
+  async refreshEpg(liveChannels: LiveChannel[], onProgress: (progress: RefreshProgress) => void = () => {}): Promise<EpgProgramme[]> {
+    onProgress({ phase: 'epg', message: 'Loading 7 day EPG', completed: 0, total: 1 });
+    const now = new Date();
+    const from = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+    const to = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const xml = await getText(buildXmlTvUrl(this.credentials));
+    return parseXmlTv(xml, buildEpgChannelMap(liveChannels), { from, to });
+  }
+}
+
+function buildEpgChannelMap(liveChannels: LiveChannel[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const channel of liveChannels) {
+    const aliases = [
+      channel.epgChannelId,
+      channel.id,
+      String(channel.streamId),
+      channel.name,
+    ].filter((value): value is string => Boolean(value));
+
+    for (const alias of aliases) {
+      if (!map.has(alias)) map.set(alias, channel.id);
+    }
+  }
+  return map;
 }
