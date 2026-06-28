@@ -17,7 +17,7 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 async function getText(url: string): Promise<string> {
-  const response = await fetch(url, { headers: { accept: 'application/xml,text/xml,*/*' }, signal: AbortSignal.timeout(30000) });
+  const response = await fetch(url, { headers: { accept: 'application/xml,text/xml,*/*' }, signal: AbortSignal.timeout(120000) });
   if (!response.ok) throw new XtreamError(`Provider returned HTTP ${response.status} for ${redactCredentialedUrl(url)}`);
   return response.text();
 }

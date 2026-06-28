@@ -4,6 +4,7 @@ import type { EpgProgramme } from '../../types/app.js';
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '',
+  processEntities: false,
 });
 
 function arrayify<T>(value: T | T[] | undefined): T[] {
@@ -21,9 +22,18 @@ function parseXmlTvDate(input: string): string {
 }
 
 function readText(value: any): string {
-  if (typeof value === 'string') return value;
-  if (typeof value?.['#text'] === 'string') return value['#text'];
+  if (typeof value === 'string') return decodeXmlText(value);
+  if (typeof value?.['#text'] === 'string') return decodeXmlText(value['#text']);
   return '';
+}
+
+function decodeXmlText(value: string): string {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'");
 }
 
 type ParseXmlTvOptions = {

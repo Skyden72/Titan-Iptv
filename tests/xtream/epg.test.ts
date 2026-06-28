@@ -36,4 +36,18 @@ describe('parseXmlTv', () => {
 
     expect(result.map((programme) => programme.title)).toEqual(['Current']);
   });
+
+  it('parses large XMLTV files with many text entities without tripping entity expansion limits', () => {
+    const title = Array.from({ length: 1100 }, () => 'Sport &amp; News').join(' ');
+    const xml = `<?xml version="1.0"?>
+      <tv>
+        <programme start="20260626080000 +0200" stop="20260626090000 +0200" channel="news">
+          <title>${title}</title>
+        </programme>
+      </tv>`;
+
+    const [programme] = parseXmlTv(xml, new Map([['news', 'live:10']]));
+
+    expect(programme.title).toContain('Sport & News');
+  });
 });
