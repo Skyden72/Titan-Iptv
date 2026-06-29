@@ -6,9 +6,10 @@ import { usePlayerShortcuts } from './player/usePlayerShortcuts';
 
 type PlayerProps = {
   request: PlaybackRequest | null;
+  compact?: boolean;
 };
 
-const Player: React.FC<PlayerProps> = ({ request }) => {
+const Player: React.FC<PlayerProps> = ({ request, compact = false }) => {
   const start = usePlayerStore((state) => state.start);
   const playerState = usePlayerStore((state) => state.state);
   const controlsVisible = usePlayerStore((state) => state.controlsVisible);
@@ -131,7 +132,7 @@ const Player: React.FC<PlayerProps> = ({ request }) => {
         {playerState.status === 'connecting' || playerState.status === 'buffering' ? playerState.status : 'mpv playback window'}
       </div>
       <div className={`${isFullscreen ? 'overflow-hidden transition duration-300 ease-out' : ''} ${isFullscreen && !controlsVisible ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
-        <PlayerOverlay />
+        <PlayerOverlay compact={compact && !isFullscreen} />
       </div>
     </div>
   );

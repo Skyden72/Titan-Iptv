@@ -8,16 +8,20 @@ function formatTime(value?: number) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-const PlayerOverlay: React.FC = () => {
+type PlayerOverlayProps = {
+  compact?: boolean;
+};
+
+const PlayerOverlay: React.FC<PlayerOverlayProps> = ({ compact = false }) => {
   const { state, command } = usePlayerStore((store) => ({ state: store.state, command: store.command }));
   const isPaused = state.status === 'paused';
   const canSeek = Boolean(state.durationSeconds);
 
   return (
-    <div className="bg-slate-950/95 border-t border-slate-800 p-4 text-white">
+    <div className={`${compact ? 'bg-slate-950/85 p-3' : 'bg-slate-950/95 p-4'} border-t border-slate-800 text-white`}>
       <div className="flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-lg font-semibold truncate">{state.title}</div>
+          <div className={`${compact ? 'text-sm' : 'text-lg'} font-semibold truncate`}>{state.title}</div>
           <div className="text-sm text-slate-300">
             {state.status}
             {state.videoParams?.height ? ` · ${state.videoParams.height}p` : ''}
@@ -43,7 +47,7 @@ const PlayerOverlay: React.FC = () => {
           <span>{formatTime(state.durationSeconds)}</span>
         </div>
       )}
-      {(state.audioTracks.length > 0 || state.subtitleTracks.length > 0) && (
+      {!compact && (state.audioTracks.length > 0 || state.subtitleTracks.length > 0) && (
         <div className="mt-3 flex items-center gap-3 text-sm">
           {state.audioTracks.length > 0 && (
             <select className="form-input max-w-52 h-9" value={state.audioTracks.find((track) => track.selected)?.id ?? ''} onChange={(event) => command({ type: 'selectAudioTrack', id: Number(event.target.value) })}>
