@@ -14,6 +14,7 @@ const ipcChannels = {
   playerSurfaceSet: 'player:surface:set',
   playerState: 'player:state',
   windowFullscreenSet: 'window:fullscreen:set',
+  windowFullscreenChanged: 'window:fullscreen:changed',
   windowCursorPositionGet: 'window:cursor-position:get',
   settingsGet: 'settings:get',
   settingsSave: 'settings:save',
@@ -33,6 +34,11 @@ const bridge = {
   sendPlayerCommand: (command) => ipcRenderer.invoke(ipcChannels.playerCommand, command),
   setPlayerSurface: (bounds) => ipcRenderer.invoke(ipcChannels.playerSurfaceSet, bounds),
   setWindowFullscreen: (fullscreen) => ipcRenderer.invoke(ipcChannels.windowFullscreenSet, fullscreen),
+  onWindowFullscreenChanged: (callback) => {
+    const listener = (_event, fullscreen) => callback(fullscreen);
+    ipcRenderer.on(ipcChannels.windowFullscreenChanged, listener);
+    return () => ipcRenderer.off(ipcChannels.windowFullscreenChanged, listener);
+  },
   getCursorPosition: () => ipcRenderer.invoke(ipcChannels.windowCursorPositionGet),
   getSettings: () => ipcRenderer.invoke(ipcChannels.settingsGet),
   saveSettings: (settings) => ipcRenderer.invoke(ipcChannels.settingsSave, settings),

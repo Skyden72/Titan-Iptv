@@ -27,6 +27,7 @@ export const ipcChannels = {
   playerSurfaceSet: 'player:surface:set',
   playerState: 'player:state',
   windowFullscreenSet: 'window:fullscreen:set',
+  windowFullscreenChanged: 'window:fullscreen:changed',
   windowCursorPositionGet: 'window:cursor-position:get',
   settingsGet: 'settings:get',
   settingsSave: 'settings:save',
@@ -58,6 +59,7 @@ export interface TitonBridge {
   sendPlayerCommand(command: PlayerCommand): Promise<PlayerState>;
   setPlayerSurface(bounds: PlayerSurfaceBounds): Promise<void>;
   setWindowFullscreen(fullscreen: boolean): Promise<boolean>;
+  onWindowFullscreenChanged(callback: (fullscreen: boolean) => void): () => void;
   getCursorPosition(): Promise<{ x: number; y: number }>;
   getSettings(): Promise<AppSettings>;
   saveSettings(settings: AppSettings): Promise<AppSettings>;

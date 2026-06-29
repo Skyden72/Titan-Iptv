@@ -14,6 +14,7 @@ import { XtreamClient } from './xtream/client.js';
 import { locateMpv } from './player/mpvLocator.js';
 import { MpvAdapter } from './player/mpvAdapter.js';
 import { PlayerService } from './player/playerService.js';
+import { ipcChannels } from '../shared/ipc.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,6 +86,14 @@ const createWindow = () => {
     return { action: 'deny' };
   });
 
+  mainWindow.on('enter-full-screen', () => {
+    if (mainWindow) sendToWindow(mainWindow, ipcChannels.windowFullscreenChanged, true);
+  });
+
+  mainWindow.on('leave-full-screen', () => {
+    if (mainWindow) sendToWindow(mainWindow, ipcChannels.windowFullscreenChanged, false);
+  });
+
   mainWindow.on('closed', () => {
     if (mainWindow === null) return;
     mainWindow = null;
@@ -115,6 +124,7 @@ app.whenReady().then(async () => {
     setWindowFullscreen: (fullscreen) => {
       if (win.isDestroyed()) return false;
       win.setFullScreen(fullscreen);
+      sendToWindow(win, ipcChannels.windowFullscreenChanged, fullscreen);
       return fullscreen;
     },
     getCursorPosition: () => screen.getCursorScreenPoint(),

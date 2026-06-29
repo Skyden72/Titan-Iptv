@@ -63,7 +63,14 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     ));
   },
   attach() {
-    return window.titon.onPlayerState((state) => set((current) => ({ state: { ...state, fullscreen: current.state.fullscreen } })));
+    const unsubscribePlayerState = window.titon.onPlayerState((state) => set((current) => ({ state: { ...state, fullscreen: current.state.fullscreen } })));
+    const unsubscribeFullscreen = window.titon.onWindowFullscreenChanged((fullscreen) => {
+      set((current) => ({ state: { ...current.state, fullscreen }, controlsVisible: true }));
+    });
+    return () => {
+      unsubscribePlayerState();
+      unsubscribeFullscreen();
+    };
   },
   showControls() {
     set({ controlsVisible: true });
