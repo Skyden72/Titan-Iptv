@@ -1,4 +1,5 @@
 import { Play } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import type { EpgProgramme, LiveChannel } from '../../types/app';
 import { formatGuideDate, formatGuideTime, getProgrammeBlock, type GuideWindow } from './timeWindow';
 
@@ -34,11 +35,21 @@ const LiveGuideGrid: React.FC<LiveGuideGridProps> = ({
   onTuneChannel,
   onProgrammeClick,
 }) => {
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const visibleCount = Math.ceil((viewportHeight || 520) / rowHeight) + overscanRows * 2;
   const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscanRows);
   const endIndex = Math.min(channels.length, startIndex + visibleCount);
   const visibleChannels = channels.slice(startIndex, endIndex);
   const nowLeft = ((guideWindow.now.getTime() - guideWindow.start.getTime()) / guideWindow.durationMs) * 100;
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer || scrollContainer.scrollTop === scrollTop) {
+      return;
+    }
+
+    scrollContainer.scrollTop = scrollTop;
+  }, [scrollTop]);
 
   return (
     <section className="min-h-0 overflow-hidden rounded-md border border-slate-800 bg-slate-950">
@@ -53,7 +64,7 @@ const LiveGuideGrid: React.FC<LiveGuideGridProps> = ({
         </div>
       </div>
 
-      <div className="relative h-full overflow-y-auto" onScroll={(event) => onScrollTopChange(event.currentTarget.scrollTop)}>
+      <div ref={scrollContainerRef} className="relative h-full overflow-y-auto" onScroll={(event) => onScrollTopChange(event.currentTarget.scrollTop)}>
         <div className="relative" style={{ height: channels.length * rowHeight }}>
           <div className="absolute inset-x-0 top-0" style={{ transform: `translateY(${startIndex * rowHeight}px)` }}>
             {visibleChannels.map((channel, offset) => {
@@ -61,6 +72,7 @@ const LiveGuideGrid: React.FC<LiveGuideGridProps> = ({
               const programmes = programmesByChannel.get(channel.id) ?? [];
               const isPlayingChannel = channel.id === playingChannelId;
               const isSelectedChannel = channel.id === selectedChannelId;
+              const channelInitial = channel.name.trim().charAt(0).toUpperCase() || '?';
 
               return (
                 <div
@@ -68,9 +80,24 @@ const LiveGuideGrid: React.FC<LiveGuideGridProps> = ({
                   className={`grid border-b border-slate-900/90 ${isSelectedChannel ? 'bg-cyan-950/20' : 'bg-slate-950'}`}
                   style={{ gridTemplateColumns: `${channelRailWidth}px minmax(0, 1fr)`, height: rowHeight }}
                 >
-                  <button className="flex min-w-0 items-center gap-3 px-3 text-left hover:bg-slate-900" onClick={() => onTuneChannel(channel)}>
+                  <button
+                    type="button"
+                    className="flex min-w-0 items-center gap-3 px-3 text-left hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                    aria-current={isPlayingChannel ? 'true' : undefined}
+                    aria-label={`Tune to ${channel.name}`}
+                    onClick={() => onTuneChannel(channel)}
+                  >
                     <span className={`w-7 text-center text-sm font-semibold ${isPlayingChannel ? 'text-cyan-300' : 'text-slate-400'}`}>{rowIndex}</span>
-                    <img src={channel.logoUrl || ''} alt="" loading="lazy" className="h-9 w-9 rounded bg-slate-800 object-cover" />
+                    {channel.logoUrl ? (
+                      <img src={channel.logoUrl} alt="" loading="lazy" className="h-9 w-9 rounded bg-slate-800 object-cover" />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="flex h-9 w-9 items-center justify-center rounded bg-slate-800 text-sm font-semibold text-slate-300"
+                      >
+                        {channelInitial}
+                      </span>
+                    )}
                     <span className={`min-w-0 flex-1 truncate font-semibold ${isPlayingChannel ? 'text-cyan-200' : 'text-slate-100'}`}>{channel.name}</span>
                     {isPlayingChannel && <Play className="h-4 w-4 fill-cyan-300 text-cyan-300" />}
                   </button>
@@ -90,9 +117,12 @@ const LiveGuideGrid: React.FC<LiveGuideGridProps> = ({
                       return (
                         <button
                           key={programme.id}
-                          className={`absolute top-1 bottom-1 min-w-16 overflow-hidden rounded-md border px-3 text-left text-sm font-semibold transition hover:border-cyan-300 ${
+                          type="button"
+                          className={`absolute top-1 bottom-1 min-w-16 overflow-hidden rounded-md border px-3 text-left text-sm font-semibold transition hover:border-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
                             active ? 'border-white bg-white text-slate-950 shadow-lg' : 'border-slate-700 bg-slate-800/80 text-slate-100'
                           }`}
+                          aria-label={`${programme.title}, ${formatGuideTime(programme.startAt)} to ${formatGuideTime(programme.endAt)} on ${channel.name}`}
+                          aria-pressed={active}
                           style={{ left: `${block.leftPercent}%`, width: `${block.widthPercent}%` }}
                           onClick={() => onProgrammeClick(channel, programme)}
                           title={programme.title}
