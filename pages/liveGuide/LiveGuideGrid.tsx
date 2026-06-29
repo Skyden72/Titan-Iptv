@@ -52,7 +52,7 @@ const LiveGuideGrid: React.FC<LiveGuideGridProps> = ({
   }, [scrollTop]);
 
   return (
-    <section className="min-h-0 overflow-hidden rounded-md border border-slate-800 bg-slate-950">
+    <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-slate-800 bg-slate-950">
       <div className="grid border-b border-slate-800 bg-slate-900/95" style={{ gridTemplateColumns: `${channelRailWidth}px minmax(0, 1fr)` }}>
         <div className="px-4 py-3 text-sm font-semibold text-cyan-200">
           {formatGuideDate(guideWindow.now)}, {formatGuideTime(guideWindow.now)}
@@ -64,7 +64,7 @@ const LiveGuideGrid: React.FC<LiveGuideGridProps> = ({
         </div>
       </div>
 
-      <div ref={scrollContainerRef} className="relative h-full overflow-y-auto" onScroll={(event) => onScrollTopChange(event.currentTarget.scrollTop)}>
+      <div ref={scrollContainerRef} className="relative min-h-0 overflow-y-auto" onScroll={(event) => onScrollTopChange(event.currentTarget.scrollTop)}>
         <div className="relative" style={{ height: channels.length * rowHeight }}>
           <div className="absolute inset-x-0 top-0" style={{ transform: `translateY(${startIndex * rowHeight}px)` }}>
             {visibleChannels.map((channel, offset) => {
@@ -118,11 +118,10 @@ const LiveGuideGrid: React.FC<LiveGuideGridProps> = ({
                         <button
                           key={programme.id}
                           type="button"
-                          className={`absolute top-1 bottom-1 min-w-16 overflow-hidden rounded-md border px-3 text-left text-sm font-semibold transition hover:border-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
+                          className={`absolute top-1 bottom-1 overflow-hidden rounded-md border px-3 text-left text-sm font-semibold transition hover:border-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
                             active ? 'border-white bg-white text-slate-950 shadow-lg' : 'border-slate-700 bg-slate-800/80 text-slate-100'
                           }`}
                           aria-label={`${programme.title}, ${formatGuideTime(programme.startAt)} to ${formatGuideTime(programme.endAt)} on ${channel.name}`}
-                          aria-pressed={active}
                           style={{ left: `${block.leftPercent}%`, width: `${block.widthPercent}%` }}
                           onClick={() => onProgrammeClick(channel, programme)}
                           title={programme.title}
