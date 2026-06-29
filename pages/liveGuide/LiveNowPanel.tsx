@@ -33,7 +33,10 @@ const LiveNowPanel: React.FC<LiveNowPanelProps> = ({ channel, programme, isFavou
           )}
         </div>
         <button
+          type="button"
           className="icon-button shrink-0"
+          aria-label={isFavourite ? 'Remove favourite' : 'Add favourite'}
+          aria-pressed={isFavourite}
           title={isFavourite ? 'Remove favourite' : 'Add favourite'}
           onClick={onToggleFavourite}
           disabled={!channel}
