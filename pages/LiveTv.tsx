@@ -1,9 +1,12 @@
 import { Heart, Play } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useAppStore } from '../store/useAppStore';
-import { usePlayerStore } from '../store/playerStore';
-import type { LiveChannel } from '../types/app';
 import Player from '../components/Player';
+import { usePlayerStore } from '../store/playerStore';
+import { useAppStore } from '../store/useAppStore';
+import type { EpgProgramme, LiveChannel } from '../types/app';
+import LiveGuideGrid from './liveGuide/LiveGuideGrid';
+import LiveNowPanel from './liveGuide/LiveNowPanel';
+import { buildGuideWindow, findCurrentProgramme } from './liveGuide/timeWindow';
 
 const channelRowHeight = 64;
 const overscanRows = 8;
@@ -20,6 +23,23 @@ const LiveTv: React.FC = () => {
   const [listHeight, setListHeight] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const favouriteIds = useMemo(() => new Set(favourites.filter((item) => item.kind === 'live').map((item) => item.itemId)), [favourites]);
+  const [guideScrollTop, setGuideScrollTop] = useState(0);
+  const [guideHeight, setGuideHeight] = useState(0);
+  const [guideNow, setGuideNow] = useState(() => new Date());
+  const guideRef = useRef<HTMLDivElement | null>(null);
+  const guideWindow = useMemo(() => buildGuideWindow(guideNow), [guideNow]);
+  const programmesByChannel = useMemo(() => {
+    const index = new Map<string, EpgProgramme[]>();
+    for (const programme of epg) {
+      const items = index.get(programme.channelId) ?? [];
+      items.push(programme);
+      index.set(programme.channelId, items);
+    }
+    for (const items of index.values()) {
+      items.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    }
+    return index;
+  }, [epg]);
 
   const filtered = useMemo(() => liveChannels.filter((channel) =>
     (categoryId === 'all' || (categoryId === 'favourites' ? favouriteIds.has(channel.id) : channel.categoryId === categoryId)) &&
@@ -30,11 +50,8 @@ const LiveTv: React.FC = () => {
   const startIndex = Math.max(0, Math.floor(scrollTop / channelRowHeight) - overscanRows);
   const endIndex = Math.min(filtered.length, startIndex + visibleCount);
   const visibleChannels = filtered.slice(startIndex, endIndex);
-  const schedule = useMemo(() => selected ? epg.filter((programme) => programme.channelId === selected.id) : [], [epg, selected]);
-  const now = Date.now();
-  const currentProgramme = schedule.find((programme) => new Date(programme.startAt).getTime() <= now && new Date(programme.endAt).getTime() > now);
-  const guideProgrammes = schedule.filter((programme) => new Date(programme.endAt).getTime() > now).slice(0, 12);
-  const upcomingProgrammes = guideProgrammes.filter((programme) => programme.id !== currentProgramme?.id).slice(0, 5);
+  const selectedSchedule = useMemo(() => selected ? programmesByChannel.get(selected.id) ?? [] : [], [programmesByChannel, selected]);
+  const currentProgramme = findCurrentProgramme(selectedSchedule, guideWindow.now);
 
   useEffect(() => {
     const list = listRef.current;
@@ -48,13 +65,46 @@ const LiveTv: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const timer = window.setInterval(() => setGuideNow(new Date()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const guide = guideRef.current;
+    if (!guide) return;
+
+    const updateHeight = () => setGuideHeight(guide.clientHeight);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(guide);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     setScrollTop(0);
+    setGuideScrollTop(0);
     listRef.current?.scrollTo({ top: 0 });
   }, [categoryId, query]);
 
   function play(channel: LiveChannel) {
     setSelected(channel);
     openPlayer({ kind: 'live', itemId: channel.id, title: channel.name, streamUrl: channel.streamUrl, playlistItemIds: filtered.map((item) => item.id) });
+  }
+
+  function handleProgrammeClick(channel: LiveChannel, programme: EpgProgramme) {
+    const isActive = currentRequest?.kind === 'live' && currentRequest.itemId === channel.id && currentProgramme?.id === programme.id;
+    if (isActive) {
+      void window.titon.setWindowFullscreen(true).then((fullscreen) => {
+        usePlayerStore.setState((current) => ({ state: { ...current.state, fullscreen } }));
+      });
+      return;
+    }
+    play(channel);
+  }
+
+  function toggleSelectedFavourite() {
+    if (!selected) return;
+    void toggleFavourite({ kind: 'live', itemId: selected.id, createdAt: new Date().toISOString() });
   }
 
   return (
@@ -88,41 +138,36 @@ const LiveTv: React.FC = () => {
         </div>
       </aside>
       <section className="min-h-0 bg-slate-950 p-4 flex flex-col gap-4 overflow-hidden">
-        <div className="overflow-hidden rounded-md border border-slate-800 bg-slate-950">
-          <div className="aspect-video max-h-[52vh] min-h-[18rem] bg-black">
-            {fullscreen ? <div className="h-full w-full bg-black" /> : <Player request={currentRequest} />}
-          </div>
-          <div className="border-t border-slate-800 bg-slate-900/95 p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="font-semibold text-white truncate">{selected?.name ?? 'No channel selected'}</h2>
-                {currentProgramme ? (
-                  <p className="mt-1 text-sm text-cyan-100 truncate">
-                    Now: {currentProgramme.title}
-                    <span className="ml-2 text-slate-400">{new Date(currentProgramme.endAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  </p>
-                ) : (
-                  <p className="mt-1 text-sm text-slate-500">{selected ? 'No current EPG programme available.' : 'Choose a channel to see EPG.'}</p>
-                )}
-              </div>
-              {guideProgrammes.length > 0 && <div className="text-xs text-slate-500 shrink-0">{guideProgrammes.length} guide items</div>}
-            </div>
-            <div className="mt-3 grid grid-cols-1 xl:grid-cols-5 gap-2">
-              {upcomingProgrammes.map((programme) => (
-                <div key={programme.id} className="min-w-0 rounded bg-slate-950/70 border border-slate-800 px-3 py-2">
-                  <div className="text-xs text-slate-500">{new Date(programme.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                  <div className="text-sm text-slate-200 truncate">{programme.title}</div>
-                </div>
-              ))}
+        <div className="grid min-h-[18rem] grid-cols-[minmax(24rem,42rem)_minmax(0,1fr)] gap-4">
+          <div className="overflow-hidden rounded-md border border-slate-800 bg-black">
+            <div className="aspect-video h-full max-h-[34vh] min-h-[18rem]">
+              {fullscreen ? <div className="h-full w-full bg-black" /> : <Player request={currentRequest} compact />}
             </div>
           </div>
+          <LiveNowPanel
+            channel={selected}
+            programme={currentProgramme}
+            isFavourite={Boolean(selected && favouriteIds.has(selected.id))}
+            now={guideWindow.now}
+            onToggleFavourite={toggleSelectedFavourite}
+          />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-slate-800 bg-slate-900/80 p-4">
-          <h2 className="font-semibold text-white">Full channel guide</h2>
-          <div className="mt-2 grid grid-cols-1 xl:grid-cols-2 gap-2">
-            {guideProgrammes.map((programme) => <div key={programme.id} className="text-sm text-slate-300"><span className="text-slate-500">{new Date(programme.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> {programme.title}</div>)}
-            {selected && guideProgrammes.length === 0 && <p className="text-sm text-slate-500">No EPG data available for this channel.</p>}
-          </div>
+
+        <div ref={guideRef} className="min-h-0 flex-1">
+          <LiveGuideGrid
+            channels={filtered}
+            programmesByChannel={programmesByChannel}
+            selectedChannelId={selected?.id}
+            playingChannelId={currentRequest?.kind === 'live' ? currentRequest.itemId : undefined}
+            activeProgrammeId={currentProgramme?.id}
+            guideWindow={guideWindow}
+            rowHeight={70}
+            scrollTop={guideScrollTop}
+            viewportHeight={guideHeight}
+            onScrollTopChange={setGuideScrollTop}
+            onTuneChannel={play}
+            onProgrammeClick={handleProgrammeClick}
+          />
         </div>
       </section>
     </div>
