@@ -15,7 +15,8 @@ const LiveTv: React.FC = () => {
   const { liveChannels, liveCategories, epg, favourites, toggleFavourite } = useAppStore((state) => state);
   const openPlayer = usePlayerStore((state) => state.open);
   const currentRequest = usePlayerStore((state) => state.currentRequest);
-  const fullscreen = usePlayerStore((state) => state.state.fullscreen);
+  const playerState = usePlayerStore((state) => state.state);
+  const fullscreen = playerState.fullscreen;
   const [query, setQuery] = useState('');
   const [categoryId, setCategoryId] = useState<string>('all');
   const [selected, setSelected] = useState<LiveChannel | null>(liveChannels[0] ?? null);
@@ -50,8 +51,13 @@ const LiveTv: React.FC = () => {
   const startIndex = Math.max(0, Math.floor(scrollTop / channelRowHeight) - overscanRows);
   const endIndex = Math.min(filtered.length, startIndex + visibleCount);
   const visibleChannels = filtered.slice(startIndex, endIndex);
-  const selectedSchedule = useMemo(() => selected ? programmesByChannel.get(selected.id) ?? [] : [], [programmesByChannel, selected]);
-  const currentProgramme = findCurrentProgramme(selectedSchedule, guideWindow.now);
+  const activeChannel = useMemo(() => {
+    if (playerState.itemId) return liveChannels.find((channel) => channel.id === playerState.itemId) ?? selected;
+    if (currentRequest?.kind === 'live') return liveChannels.find((channel) => channel.id === currentRequest.itemId) ?? selected;
+    return selected;
+  }, [currentRequest, liveChannels, playerState.itemId, selected]);
+  const activeSchedule = useMemo(() => activeChannel ? programmesByChannel.get(activeChannel.id) ?? [] : [], [activeChannel, programmesByChannel]);
+  const currentProgramme = findCurrentProgramme(activeSchedule, guideWindow.now);
 
   useEffect(() => {
     const list = listRef.current;
@@ -92,7 +98,8 @@ const LiveTv: React.FC = () => {
   }
 
   function handleProgrammeClick(channel: LiveChannel, programme: EpgProgramme) {
-    const isActive = currentRequest?.kind === 'live' && currentRequest.itemId === channel.id && currentProgramme?.id === programme.id;
+    const activeItemId = playerState.itemId ?? (currentRequest?.kind === 'live' ? currentRequest.itemId : undefined);
+    const isActive = activeItemId === channel.id && currentProgramme?.id === programme.id;
     if (isActive) {
       void window.titon.setWindowFullscreen(true).then((fullscreen) => {
         usePlayerStore.setState((current) => ({ state: { ...current.state, fullscreen } }));
@@ -103,8 +110,8 @@ const LiveTv: React.FC = () => {
   }
 
   function toggleSelectedFavourite() {
-    if (!selected) return;
-    void toggleFavourite({ kind: 'live', itemId: selected.id, createdAt: new Date().toISOString() });
+    if (!activeChannel) return;
+    void toggleFavourite({ kind: 'live', itemId: activeChannel.id, createdAt: new Date().toISOString() });
   }
 
   return (
@@ -145,9 +152,9 @@ const LiveTv: React.FC = () => {
             </div>
           </div>
           <LiveNowPanel
-            channel={selected}
+            channel={activeChannel}
             programme={currentProgramme}
-            isFavourite={Boolean(selected && favouriteIds.has(selected.id))}
+            isFavourite={Boolean(activeChannel && favouriteIds.has(activeChannel.id))}
             now={guideWindow.now}
             onToggleFavourite={toggleSelectedFavourite}
           />
@@ -158,7 +165,7 @@ const LiveTv: React.FC = () => {
             channels={filtered}
             programmesByChannel={programmesByChannel}
             selectedChannelId={selected?.id}
-            playingChannelId={currentRequest?.kind === 'live' ? currentRequest.itemId : undefined}
+            playingChannelId={activeChannel?.id}
             activeProgrammeId={currentProgramme?.id}
             guideWindow={guideWindow}
             rowHeight={70}
