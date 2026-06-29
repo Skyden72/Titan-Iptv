@@ -13,14 +13,22 @@ export type ProgrammeBlock = {
   widthPercent: number;
 };
 
-const halfHourMs = 30 * 60 * 1000;
 const guideDurationMs = 2 * 60 * 60 * 1000;
 
 export function buildGuideWindow(now = new Date()): GuideWindow {
-  const startMs = Math.floor(now.getTime() / halfHourMs) * halfHourMs;
-  const start = new Date(startMs);
-  const end = new Date(startMs + guideDurationMs);
-  const ticks = Array.from({ length: 5 }, (_, index) => new Date(startMs + index * halfHourMs));
+  const start = new Date(now);
+  start.setSeconds(0, 0);
+  const localMinutes = start.getMinutes();
+  start.setMinutes(localMinutes < 30 ? 0 : 30);
+
+  const end = new Date(start);
+  end.setHours(end.getHours() + 2);
+
+  const ticks = Array.from({ length: 5 }, (_, index) => {
+    const tick = new Date(start);
+    tick.setMinutes(start.getMinutes() + index * 30);
+    return tick;
+  });
 
   return { start, end, ticks, now, durationMs: guideDurationMs };
 }

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { EpgProgramme } from '../../types/app';
-import { buildGuideWindow, findCurrentProgramme, getProgrammeBlock, getProgrammeProgress } from './timeWindow';
+import {
+  buildGuideWindow,
+  findCurrentProgramme,
+  formatGuideDate,
+  formatGuideTime,
+  getProgrammeBlock,
+  getProgrammeProgress,
+} from './timeWindow';
 
 const programme = (id: string, startAt: string, endAt: string, title = id): EpgProgramme => ({
   id,
@@ -14,6 +21,8 @@ describe('live guide time window helpers', () => {
   it('starts on the previous half hour and spans two hours', () => {
     const window = buildGuideWindow(new Date('2026-06-29T03:18:00.000Z'));
 
+    expect(window.start.getMinutes()).toBe(0);
+    expect(window.end.getMinutes()).toBe(0);
     expect(window.start.toISOString()).toBe('2026-06-29T03:00:00.000Z');
     expect(window.end.toISOString()).toBe('2026-06-29T05:00:00.000Z');
     expect(window.ticks.map((tick) => tick.toISOString())).toEqual([
@@ -58,5 +67,17 @@ describe('live guide time window helpers', () => {
 
     expect(progress.percent).toBe(70);
     expect(progress.remainingMinutes).toBe(18);
+  });
+
+  it('formats guide times using the local locale rules', () => {
+    const value = new Date('2026-06-29T03:42:00.000Z');
+
+    expect(formatGuideTime(value)).toBe(value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  });
+
+  it('formats guide dates using the local locale rules', () => {
+    const value = new Date('2026-06-29T03:42:00.000Z');
+
+    expect(formatGuideDate(value)).toBe(value.toLocaleDateString([], { weekday: 'short', day: '2-digit', month: 'short' }));
   });
 });
