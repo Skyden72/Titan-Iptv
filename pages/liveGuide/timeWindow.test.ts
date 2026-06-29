@@ -75,7 +75,7 @@ describe('live guide time window helpers', () => {
 
   it('formats guide times with a controlled locale output', () => {
     const value = new Date('2026-06-29T03:42:00.000Z');
-    vi.spyOn(Date.prototype, 'toLocaleTimeString').mockImplementation(function () {
+    vi.spyOn(Date.prototype, 'toLocaleTimeString').mockImplementation(function (this: Date) {
       return new Intl.DateTimeFormat('en-GB', {
         timeZone: 'UTC',
         hour: '2-digit',
@@ -89,7 +89,7 @@ describe('live guide time window helpers', () => {
 
   it('formats guide dates with a controlled locale output', () => {
     const value = new Date('2026-06-29T03:42:00.000Z');
-    vi.spyOn(Date.prototype, 'toLocaleDateString').mockImplementation(function () {
+    vi.spyOn(Date.prototype, 'toLocaleDateString').mockImplementation(function (this: Date) {
       return new Intl.DateTimeFormat('en-GB', {
         timeZone: 'UTC',
         weekday: 'short',
