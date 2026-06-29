@@ -14,7 +14,6 @@ import { XtreamClient } from './xtream/client.js';
 import { locateMpv } from './player/mpvLocator.js';
 import { MpvAdapter } from './player/mpvAdapter.js';
 import { PlayerService } from './player/playerService.js';
-import { ipcChannels } from '../shared/ipc.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +24,7 @@ if (squirrelStartup) {
 
 let mainWindow: BrowserWindow | null = null;
 let playerService: PlayerService | null = null;
+const windowFullscreenChangedChannel = 'window:fullscreen:changed';
 
 function sendToWindow(window: BrowserWindow, channel: string, payload: unknown): void {
   if (window.isDestroyed() || window.webContents.isDestroyed()) return;
@@ -87,11 +87,11 @@ const createWindow = () => {
   });
 
   mainWindow.on('enter-full-screen', () => {
-    if (mainWindow) sendToWindow(mainWindow, ipcChannels.windowFullscreenChanged, true);
+    if (mainWindow) sendToWindow(mainWindow, windowFullscreenChangedChannel, true);
   });
 
   mainWindow.on('leave-full-screen', () => {
-    if (mainWindow) sendToWindow(mainWindow, ipcChannels.windowFullscreenChanged, false);
+    if (mainWindow) sendToWindow(mainWindow, windowFullscreenChangedChannel, false);
   });
 
   mainWindow.on('closed', () => {
@@ -124,7 +124,7 @@ app.whenReady().then(async () => {
     setWindowFullscreen: (fullscreen) => {
       if (win.isDestroyed()) return false;
       win.setFullScreen(fullscreen);
-      sendToWindow(win, ipcChannels.windowFullscreenChanged, fullscreen);
+      sendToWindow(win, windowFullscreenChangedChannel, fullscreen);
       return fullscreen;
     },
     getCursorPosition: () => screen.getCursorScreenPoint(),
