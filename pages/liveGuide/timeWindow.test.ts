@@ -1,0 +1,62 @@
+import { describe, expect, it } from 'vitest';
+import type { EpgProgramme } from '../../types/app';
+import { buildGuideWindow, findCurrentProgramme, getProgrammeBlock, getProgrammeProgress } from './timeWindow';
+
+const programme = (id: string, startAt: string, endAt: string, title = id): EpgProgramme => ({
+  id,
+  channelId: 'live:1',
+  startAt,
+  endAt,
+  title,
+});
+
+describe('live guide time window helpers', () => {
+  it('starts on the previous half hour and spans two hours', () => {
+    const window = buildGuideWindow(new Date('2026-06-29T03:18:00.000Z'));
+
+    expect(window.start.toISOString()).toBe('2026-06-29T03:00:00.000Z');
+    expect(window.end.toISOString()).toBe('2026-06-29T05:00:00.000Z');
+    expect(window.ticks.map((tick) => tick.toISOString())).toEqual([
+      '2026-06-29T03:00:00.000Z',
+      '2026-06-29T03:30:00.000Z',
+      '2026-06-29T04:00:00.000Z',
+      '2026-06-29T04:30:00.000Z',
+      '2026-06-29T05:00:00.000Z',
+    ]);
+  });
+
+  it('clips programme blocks to the visible guide window', () => {
+    const window = buildGuideWindow(new Date('2026-06-29T03:18:00.000Z'));
+    const block = getProgrammeBlock(
+      programme('f1', '2026-06-29T02:45:00.000Z', '2026-06-29T04:00:00.000Z'),
+      window,
+    );
+
+    expect(block).toEqual({ leftPercent: 0, widthPercent: 50 });
+  });
+
+  it('returns null for programmes outside the guide window', () => {
+    const window = buildGuideWindow(new Date('2026-06-29T03:18:00.000Z'));
+
+    expect(getProgrammeBlock(programme('old', '2026-06-29T01:00:00.000Z', '2026-06-29T02:00:00.000Z'), window)).toBeNull();
+    expect(getProgrammeBlock(programme('future', '2026-06-29T05:30:00.000Z', '2026-06-29T06:00:00.000Z'), window)).toBeNull();
+  });
+
+  it('finds the programme that is currently on air', () => {
+    const now = new Date('2026-06-29T03:18:00.000Z');
+    const current = findCurrentProgramme([
+      programme('old', '2026-06-29T02:00:00.000Z', '2026-06-29T03:00:00.000Z'),
+      programme('current', '2026-06-29T03:00:00.000Z', '2026-06-29T04:00:00.000Z'),
+    ], now);
+
+    expect(current?.id).toBe('current');
+  });
+
+  it('calculates current programme progress and remaining minutes', () => {
+    const now = new Date('2026-06-29T03:42:00.000Z');
+    const progress = getProgrammeProgress(programme('f1', '2026-06-29T03:00:00.000Z', '2026-06-29T04:00:00.000Z'), now);
+
+    expect(progress.percent).toBe(70);
+    expect(progress.remainingMinutes).toBe(18);
+  });
+});
