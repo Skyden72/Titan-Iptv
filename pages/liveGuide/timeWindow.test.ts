@@ -38,22 +38,6 @@ describe('live guide time window helpers', () => {
     ]);
   });
 
-  it('rounds guide windows on local wall-clock half hours in offset timezones', () => {
-    const originalTz = process.env.TZ;
-    process.env.TZ = 'Asia/Kathmandu';
-
-    try {
-      const window = buildGuideWindow(new Date('2026-06-29T03:18:00.000Z'));
-
-      expect(window.start.getHours()).toBe(9);
-      expect(window.start.getMinutes()).toBe(0);
-      expect(window.start.toISOString()).toBe('2026-06-29T03:15:00.000Z');
-      expect(window.ticks.map((tick) => tick.getMinutes())).toEqual([0, 30, 0, 30, 0]);
-    } finally {
-      process.env.TZ = originalTz;
-    }
-  });
-
   it('clips programme blocks to the visible guide window', () => {
     const window = buildGuideWindow(new Date('2026-06-29T03:18:00.000Z'));
     const block = getProgrammeBlock(
@@ -115,5 +99,25 @@ describe('live guide time window helpers', () => {
     });
 
     expect(formatGuideDate(value)).toBe('Mon 29 Jun');
+  });
+
+  it('rounds guide windows on local wall-clock half hours in offset timezones', () => {
+    const originalTz = process.env.TZ;
+    process.env.TZ = 'Asia/Kathmandu';
+
+    try {
+      const window = buildGuideWindow(new Date('2026-06-29T03:18:00.000Z'));
+
+      expect(window.start.getHours()).toBe(9);
+      expect(window.start.getMinutes()).toBe(0);
+      expect(window.start.toISOString()).toBe('2026-06-29T03:15:00.000Z');
+      expect(window.ticks.map((tick) => tick.getMinutes())).toEqual([0, 30, 0, 30, 0]);
+    } finally {
+      if (originalTz === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTz;
+      }
+    }
   });
 });
