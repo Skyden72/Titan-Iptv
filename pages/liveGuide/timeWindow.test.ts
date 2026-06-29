@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { EpgProgramme } from '../../types/app';
 import {
   buildGuideWindow,
@@ -17,6 +17,10 @@ const programme = (id: string, startAt: string, endAt: string, title = id): EpgP
   title,
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('live guide time window helpers', () => {
   it('starts on the previous half hour and spans two hours', () => {
     const window = buildGuideWindow(new Date('2026-06-29T03:18:00.000Z'));
@@ -32,6 +36,22 @@ describe('live guide time window helpers', () => {
       '2026-06-29T04:30:00.000Z',
       '2026-06-29T05:00:00.000Z',
     ]);
+  });
+
+  it('rounds guide windows on local wall-clock half hours in offset timezones', () => {
+    const originalTz = process.env.TZ;
+    process.env.TZ = 'Asia/Kathmandu';
+
+    try {
+      const window = buildGuideWindow(new Date('2026-06-29T03:18:00.000Z'));
+
+      expect(window.start.getHours()).toBe(9);
+      expect(window.start.getMinutes()).toBe(0);
+      expect(window.start.toISOString()).toBe('2026-06-29T03:15:00.000Z');
+      expect(window.ticks.map((tick) => tick.getMinutes())).toEqual([0, 30, 0, 30, 0]);
+    } finally {
+      process.env.TZ = originalTz;
+    }
   });
 
   it('clips programme blocks to the visible guide window', () => {
@@ -69,15 +89,31 @@ describe('live guide time window helpers', () => {
     expect(progress.remainingMinutes).toBe(18);
   });
 
-  it('formats guide times using the local locale rules', () => {
+  it('formats guide times with a controlled locale output', () => {
     const value = new Date('2026-06-29T03:42:00.000Z');
+    vi.spyOn(Date.prototype, 'toLocaleTimeString').mockImplementation(function () {
+      return new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'UTC',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(this);
+    });
 
-    expect(formatGuideTime(value)).toBe(value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    expect(formatGuideTime(value)).toBe('03:42');
   });
 
-  it('formats guide dates using the local locale rules', () => {
+  it('formats guide dates with a controlled locale output', () => {
     const value = new Date('2026-06-29T03:42:00.000Z');
+    vi.spyOn(Date.prototype, 'toLocaleDateString').mockImplementation(function () {
+      return new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'UTC',
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+      }).format(this);
+    });
 
-    expect(formatGuideDate(value)).toBe(value.toLocaleDateString([], { weekday: 'short', day: '2-digit', month: 'short' }));
+    expect(formatGuideDate(value)).toBe('Mon 29 Jun');
   });
 });
