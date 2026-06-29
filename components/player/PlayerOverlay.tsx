@@ -1,4 +1,4 @@
-import { Maximize2, Minimize2, Pause, Play, SkipBack, SkipForward, Square, Volume2, VolumeX } from 'lucide-react';
+import { Maximize2, Minimize2, Pause, Play, Square, Volume2, VolumeX } from 'lucide-react';
 import { usePlayerStore } from '../../store/playerStore';
 
 function formatTime(value?: number) {
@@ -29,10 +29,8 @@ const PlayerOverlay: React.FC<PlayerOverlayProps> = ({ compact = false }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="icon-button" title="Previous" onClick={() => command({ type: 'previous' })}><SkipBack className="h-5 w-5" /></button>
           <button className="icon-button" title={isPaused ? 'Play' : 'Pause'} onClick={() => command({ type: 'playPause' })}>{isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}</button>
           <button className="icon-button" title="Stop" onClick={() => command({ type: 'stop' })}><Square className="h-5 w-5" /></button>
-          <button className="icon-button" title="Next" onClick={() => command({ type: 'next' })}><SkipForward className="h-5 w-5" /></button>
           <button className="icon-button" title={state.muted ? 'Unmute' : 'Mute'} onClick={() => command({ type: 'mute', muted: !state.muted })}>{state.muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
           <input aria-label="Volume" type="range" min={0} max={100} value={state.volume} onChange={(event) => command({ type: 'setVolume', volume: Number(event.target.value) })} />
           <button className="icon-button" title={state.fullscreen ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => command({ type: 'fullscreen', fullscreen: !state.fullscreen })}>
